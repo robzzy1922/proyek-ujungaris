@@ -15,7 +15,6 @@ return new class extends Migration
         Schema::create('ormawas', function (Blueprint $table) {
             $table->id();
             $table->string('namaMahasiswa');
-            $table->string('namaOrmawa');
             $table->string('nim', 20)->unique();
             $table->string('email', 50)->unique();
             $table->string('noHp', 20);

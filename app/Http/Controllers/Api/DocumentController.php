@@ -29,10 +29,10 @@ class DocumentController extends Controller
 
             $file = $request->file('dokumen');
             $fileName = time() . '_' . $file->getClientOriginalName();
-            
+
             // Simpan di folder dokumen
             $filePath = $file->storeAs('dokumen', $fileName, 'public');
-            
+
             $dokumen = new Dokumen();
             $dokumen->nomor_surat = $request->nomor_surat;
             $dokumen->perihal = $request->hal;
@@ -64,12 +64,12 @@ class DocumentController extends Controller
     {
         try {
             $ormawaId = $request->user()->id;
-            
+
             // Log untuk debugging
             Log::info('Getting stats for ormawa:', ['ormawa_id' => $ormawaId]);
-            
+
             $allDocuments = Dokumen::where('id_ormawa', $ormawaId)->get();
-            
+
             // Debug: tampilkan semua dokumen dan statusnya
             Log::info('All documents:', $allDocuments->map(function($doc) {
                 return [
@@ -157,14 +157,14 @@ class DocumentController extends Controller
             ], 500);
         }
     }
-    
+
     public function getTujuanPengajuan()
     {
         try {
             $dosen = Dosen::select('id', 'nama_dosen as nama')->get();
-            
+
             Log::info('Fetching tujuan pengajuan data', ['count' => $dosen->count()]);
-            
+
             return response()->json([
                 'success' => true,
                 'data' => $dosen
@@ -183,7 +183,7 @@ class DocumentController extends Controller
         try {
             $user = $request->user();
             $userType = $request->header('X-User-Type'); // Get user type from header
-            
+
             Log::info('Getting documents for user:', [
                 'user_id' => $user->id,
                 'user_type' => $userType
@@ -244,11 +244,11 @@ class DocumentController extends Controller
     {
         try {
             $document = Dokumen::findOrFail($id);
-            
+
             // Get the full URL for the document file
             $fileUrl = Storage::url($document->file);
             $fullUrl = url($fileUrl);
-            
+
             // Log the file path and URL for debugging
             Log::info('Document file details:', [
                 'file_path' => $document->file,
@@ -256,7 +256,7 @@ class DocumentController extends Controller
                 'full_url' => $fullUrl,
                 'file_exists' => Storage::exists($document->file)
             ]);
-            
+
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -282,12 +282,12 @@ class DocumentController extends Controller
     {
         try {
             $document = Dokumen::findOrFail($id);
-            
+
             Log::info('=== MULAI MENGAMBIL FILE PDF ===');
             Log::info('Document ID: ' . $id);
             Log::info('File path: ' . $document->file);
             Log::info('Storage path: ' . Storage::path('public/' . $document->file));
-            
+
             if (!Storage::exists('public/' . $document->file)) {
                 Log::error('File tidak ditemukan di storage');
                 return response()->json([
@@ -297,7 +297,7 @@ class DocumentController extends Controller
             }
 
             $filePath = Storage::path('public/' . $document->file);
-            
+
             if (!is_file($filePath) || !is_readable($filePath)) {
                 Log::error('File tidak dapat dibaca');
                 Log::error('Is file: ' . (is_file($filePath) ? 'true' : 'false'));
@@ -310,10 +310,10 @@ class DocumentController extends Controller
 
             $fileContent = file_get_contents($filePath);
             $fileSize = strlen($fileContent);
-            
+
             Log::info('File size: ' . $fileSize . ' bytes');
             Log::info('First 10 bytes: ' . substr(bin2hex($fileContent), 0, 20));
-            
+
             if (strpos($fileContent, '%PDF-') !== 0) {
                 Log::error('File bukan PDF yang valid');
                 Log::error('First 10 bytes: ' . substr(bin2hex($fileContent), 0, 20));
@@ -385,12 +385,12 @@ class DocumentController extends Controller
     {
         try {
             Log::info('Fetching document with ID: ' . $id);
-            
+
             $document = Dokumen::findOrFail($id);
             $filePath = storage_path('app/public/dokumen/' . $document->file);
-            
+
             Log::info('File path: ' . $filePath);
-            
+
             if (!file_exists($filePath)) {
                 Log::error('File not found at: ' . $filePath);
                 return response()->json([
@@ -425,7 +425,7 @@ class DocumentController extends Controller
         } catch (\Exception $e) {
             Log::error('Error in getFile: ' . $e->getMessage());
             Log::error($e->getTraceAsString());
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error: ' . $e->getMessage()
@@ -438,7 +438,7 @@ class DocumentController extends Controller
         try {
             $filePath = storage_path('app/public/' . $document->file);
             $outputPath = storage_path('app/public/signed/' . basename($document->file));
-            
+
             // Create directory if it doesn't exist
             if (!file_exists(dirname($outputPath))) {
                 mkdir(dirname($outputPath), 0755, true);

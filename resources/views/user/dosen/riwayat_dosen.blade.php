@@ -1,4 +1,4 @@
-@extends('layouts.dosen')
+@extends('layouts.app_kuwu')
 @section('title', 'Riwayat Pengesahan')
 @section('content')
 <div class="container flex-grow max-w-5xl px-4 mx-auto mt-8">

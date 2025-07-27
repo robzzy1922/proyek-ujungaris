@@ -7,10 +7,18 @@ use App\Models\Ormawas;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\View;
+use App\Services\BrevoEmailService;
 
 class EmailVerificationController extends Controller
 {
+    protected $brevoEmailService;
+
+    public function __construct(BrevoEmailService $brevoEmailService)
+    {
+        $this->brevoEmailService = $brevoEmailService;
+    }
+
     // Generate OTP and send to email
     public function sendEmailOTP(Request $request)
     {
@@ -318,14 +326,14 @@ class EmailVerificationController extends Controller
                 'name' => $name
             ];
 
-            Mail::send('emails.otp-verification', $data, function($message) use($email) {
-                $message->to($email)
-                        ->subject('Email Verification Code - Sistem Dokumen Digital');
-            });
+            // Render Blade template to HTML string
+            $htmlContent = View::make('emails.otp-verification', $data)->render();
+            $subject = 'Email Verification Code - Sistem Dokumen Digital';
 
-            // Check if there were any failures
-            if (Mail::failures()) {
-                Log::error('Failed to send email to: ' . $email, ['failures' => Mail::failures()]);
+            $success = $this->brevoEmailService->sendEmail($email, $subject, $htmlContent, $name);
+
+            if (!$success) {
+                Log::error('Failed to send email to: ' . $email);
                 throw new \Exception('Failed to send email');
             }
 

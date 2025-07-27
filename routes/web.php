@@ -42,6 +42,14 @@ Route::middleware(['auth:ormawa'])->group(function () {
         Route::post('/dokumen/{id}/update', [OrmawaController::class, 'updateDokumen'])->name('dokumen.update');
         Route::get('/dokumen/{id}', [OrmawaController::class, 'showDokumen'])->name('dokumen.show');
 
+        // Route untuk QR Code
+        Route::get('/dokumen/{id}/generate-qr', [OrmawaController::class, 'generateQrCode'])
+        ->name('dokumen.generateQr');
+        Route::post('/dokumen/{dokumen}/save-qr-position', [OrmawaController::class, 'saveQrPosition'])
+        ->name('dokumen.saveQrPosition');
+        Route::get('/dokumen/{id}/edit-qr', [OrmawaController::class, 'editQrCode'])
+        ->name('dokumen.editQr');
+
         // Profile routes
         Route::get('/profil', [OrmawaController::class, 'profil'])->name('profil');
         Route::get('/profile', [OrmawaController::class, 'profile'])->name('profile');
@@ -106,6 +114,10 @@ Route::middleware(['auth:dosen'])->prefix('dosen')->name('dosen.')->group(functi
     Route::post('/dosen/dokumen/{id}/revisi', [DosenController::class, 'submitRevisi'])
         ->name('dosen.dokumen.revisi')
         ->middleware('auth:dosen');
+
+    // Add this new route for document approval
+    Route::post('/dokumen/{id}/approve', [DosenController::class, 'approveDokumen'])
+        ->name('dokumen.approve');
 });
 
 //kemahasiswaan

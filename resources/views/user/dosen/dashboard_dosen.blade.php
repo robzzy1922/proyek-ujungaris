@@ -1,4 +1,4 @@
-@extends('layouts.dosen')
+@extends('layouts.app_kuwu')
 @section('title', 'Dashboard Dosen')
 @section('content')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -67,9 +67,9 @@
                             <div class="p-3 mb-3 bg-red-300 rounded-full bg-opacity-30">
                                 <i class="text-3xl text-white fas fa-file-medical-alt"></i>
                             </div>
-                            <h2 class="text-lg font-semibold text-white">Perlu Direvisi Ormawa</h2>
+                            <h2 class="text-lg font-semibold text-white">Sudah Disetujui</h2>
                         </div>
-                        <span class="text-5xl font-bold text-white">{{ $countButuhRevisi }}</span>
+                        <span class="text-5xl font-bold text-white">{{ $countDisetujui }}</span>
                     </div>
                     <div class="absolute right-2 bottom-2 opacity-10">
                         <i class="text-6xl text-white fas fa-exclamation-circle"></i>
@@ -78,31 +78,6 @@
             </div>
         </a>
 
-
-        <!-- Surat sudah direvisi -->
-        <a href="{{ route('dosen.riwayat', ['status' => 'direvisi']) }}"
-            class="block transition-all transform hover:scale-105">
-            <div class="p-8 shadow-lg bg-gradient-to-br from-blue-400 to-blue-500 rounded-xl">
-                <div class="flex flex-col space-y-3">
-                    <div class="flex items-center justify-between">
-                        <div class="flex flex-col items-start">
-                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                            <div class="p-3 mb-3 bg-blue-300 rounded-full bg-opacity-30">
-                                <i class="text-3xl text-white fas fa-file-code"></i>
-                            </div>
-                            <h2 class="text-lg font-semibold text-white">Sudah Direvisi Ormawa</h2>
-                        </div>
-                        <span class="text-5xl font-bold text-white">{{ $countRevisi }}</span>
-                    </div>
-                    <div class="absolute right-2 bottom-2 opacity-10">
-                        <i class="text-6xl text-white fas fa-sync-alt"></i>
-                    </div>
-                </div>
-            </div>
-        </a>
     </div>
 
     <!-- Search and Filter Section -->
@@ -142,8 +117,8 @@
                     <th class="px-6 py-3 text-xs font-medium text-left text-gray-500 uppercase">No. Surat</th>
                     <th class="px-6 py-3 text-xs font-medium text-left text-gray-500 uppercase">Tanggal Pengajuan</th>
                     <th class="px-6 py-3 text-xs font-medium text-left text-gray-500 uppercase">Nama Pengaju</th>
-                    <th class="px-6 py-3 text-xs font-medium text-left text-gray-500 uppercase">Hal</th>
-                    <th class="px-6 py-3 text-xs font-medium text-left text-gray-500 uppercase">Dari</th>
+                    <th class="px-6 py-3 text-xs font-medium text-left text-gray-500 uppercase">Nama Pemohon</th>
+
                     <th class="px-6 py-3 text-xs font-medium text-left text-gray-500 uppercase">Status</th>
                     <th class="px-6 py-3 text-xs font-medium text-left text-gray-500 uppercase">Aksi</th>
                 </tr>
@@ -164,8 +139,8 @@
                     <td class="px-6 py-4 whitespace-nowrap" data-nomor>{{ $dokumen->nomor_surat }}</td>
                     <td class="px-6 py-4 whitespace-nowrap" data-tanggal>{{ $dokumen->tanggal_pengajuan }}</td>
                     <td class="px-6 py-4 whitespace-nowrap" data-namaPengirim>{{ $dokumen->ormawa->namaMahasiswa }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap" data-perihal>{{ $dokumen->perihal }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap" data-ormawa>{{ $dokumen->ormawa->namaOrmawa }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap" data-perihal>{{ $dokumen->nama_pemohon }}</td>
+
                     <td class="px-6 py-4 whitespace-nowrap" data-status>
                         @php
                         $statusClass = match($dokumen->status_dokumen) {
@@ -253,44 +228,22 @@
                     class="px-4 py-2 text-white bg-yellow-500 rounded-md hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2">
                     Lihat
                 </button>
-                <button onclick="showRevisiForm()"
-                    class="px-4 py-2 text-white bg-red-500 rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
-                    Revisi
+                <button onclick="approveDokumen()"
+                    class="px-4 py-2 text-white bg-green-500 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                    Setujui
                 </button>
                 <button onclick="closeModal()"
                     class="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
                     Tutup
                 </button>
                 <button onclick="editQrCode()"
-                    class="px-4 py-2 text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                    class="px-4 py-2 text-white bg-green-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled>
                     Bubuhkan QR Code
                 </button>
             </div>
 
-            <!-- Form Revisi -->
-            <div id="revisiForm" class="hidden p-6">
-                <form id="formRevisi" class="space-y-4">
-                    @csrf
-                    <div>
-                        <label for="keteranganRevisi" class="block text-sm font-medium text-gray-700">
-                            Keterangan Revisi
-                        </label>
-                        <textarea id="keteranganRevisi" name="keterangan" rows="4"
-                            class="block w-full mt-1 border-gray-800 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            required></textarea>
-                    </div>
-                    <div class="flex justify-end space-x-3">
-                        <button type="button" onclick="cancelRevisi()"
-                            class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
-                            Batal
-                        </button>
-                        <button type="button" onclick="submitRevisi()"
-                            class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700">
-                            Kirim Revisi
-                        </button>
-                    </div>
-                </form>
-            </div>
+
         </div>
     </div>
 </div>
@@ -347,6 +300,27 @@
                         ` : ''}
                     </div>
                 `;
+
+                // Get the QR Code button
+                const qrCodeButton = document.querySelector('button[onclick="editQrCode()"]');
+                const approveButton = document.querySelector('button[onclick="approveDokumen()"]');
+
+                // Enable/disable buttons based on document status
+                if (data.status_dokumen.toLowerCase() === 'disetujui') {
+                    qrCodeButton.removeAttribute('disabled');
+                    qrCodeButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                    qrCodeButton.classList.add('hover:bg-green-700');
+
+                    // Hide approve button if already approved
+                    approveButton.style.display = 'none';
+                } else {
+                    qrCodeButton.setAttribute('disabled', 'disabled');
+                    qrCodeButton.classList.add('opacity-50', 'cursor-not-allowed');
+                    qrCodeButton.classList.remove('hover:bg-green-700');
+
+                    // Show approve button if not approved
+                    approveButton.style.display = 'block';
+                }
 
                 document.getElementById('documentModal').classList.remove('hidden');
             });
@@ -556,63 +530,58 @@
         });
     }
 
-    function showRevisiForm() {
-        document.getElementById('modalContent').classList.add('hidden');
-        document.getElementById('revisiForm').classList.remove('hidden');
-        document.getElementById('modalButtons').classList.add('hidden');
-    }
+    function approveDokumen() {
+        if (!currentDocumentId) return;
 
-    function cancelRevisi() {
-        document.getElementById('revisiForm').classList.add('hidden');
-        document.getElementById('modalContent').classList.remove('hidden');
-        document.getElementById('modalButtons').classList.remove('hidden');
-        document.getElementById('formRevisi').reset();
-    }
-
-    function submitRevisi() {
-        const keterangan = document.getElementById('keteranganRevisi').value;
-
-        if (!keterangan.trim()) {
-            alert('Keterangan revisi tidak boleh kosong');
-            return;
-        }
-
-        // Debug: Log URL dan data yang akan dikirim
-        console.log('Submitting to:', `/dosen/dokumen/${currentDocumentId}/revisi`);
-        console.log('Data:', { keterangan: keterangan });
-
-        fetch(`/dosen/dokumen/${currentDocumentId}/revisi`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                keterangan: keterangan
-            })
-        })
-        .then(response => {
-            if (!response.ok) {
-                return response.json().then(err => {
-                    throw new Error(err.message || 'Network response was not ok');
+        Swal.fire({
+            title: 'Konfirmasi Persetujuan',
+            text: "Apakah Anda yakin ingin menyetujui dokumen ini?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Ya, Setujui!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`/dosen/dokumen/${currentDocumentId}/approve`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire(
+                            'Berhasil!',
+                            'Dokumen telah disetujui.',
+                            'success'
+                        ).then(() => {
+                            location.reload(); // Reload the page to update the status
+                        });
+                    } else {
+                        Swal.fire(
+                            'Gagal!',
+                            data.message || 'Terjadi kesalahan saat menyetujui dokumen.',
+                            'error'
+                        );
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    Swal.fire(
+                        'Error!',
+                        'Terjadi kesalahan saat menyetujui dokumen.',
+                        'error'
+                    );
                 });
             }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                alert('Dokumen berhasil direvisi');
-                window.location.reload();
-            } else {
-                throw new Error(data.message || 'Gagal melakukan revisi');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Terjadi kesalahan saat melakukan revisi: ' + error.message);
         });
     }
+
+
 
     // Close modal when clicking outside
     document.getElementById('documentModal').addEventListener('click', function(e) {

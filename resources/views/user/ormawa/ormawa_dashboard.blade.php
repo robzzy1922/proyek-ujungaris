@@ -1,4 +1,4 @@
-@extends('layouts.ormawa')
+@extends('layouts.app_admin')
 @section('title', 'Dashboard Ormawa')
 @section('content')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -47,7 +47,7 @@
     </script>
     @endif
 
-    <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
         <!-- Dokumen Diajukan -->
         <a href="{{ route('ormawa.riwayat', ['status' => 'diajukan']) }}" class="block">
             <div
@@ -67,7 +67,7 @@
             </div>
         </a>
 
-        <!-- Dokumen Tertanda -->
+        <!-- Dokumen Disahkan -->
         <a href="{{ route('ormawa.riwayat', ['status' => 'disahkan']) }}" class="block">
             <div
                 class="p-6 duration-300 bg-green-400 shadow-lg rounded-xl hover:shadow-xl hover:bg-green-500 transition-color">
@@ -86,39 +86,19 @@
             </div>
         </a>
 
-        <!-- Perlu Direvisi -->
-        <a href="{{ route('ormawa.riwayat', ['status' => 'butuh_revisi']) }}" class="block">
-            <div
-                class="p-6 duration-300 bg-red-400 shadow-lg rounded-xl hover:shadow-xl hover:bg-red-500 transition-color">
+        <!-- Dokumen Disetujui -->
+        <a href="{{ route('ormawa.riwayat', ['status' => 'disetujui']) }}" class="block">
+            <div class="p-6 duration-300 bg-blue-400 shadow-lg rounded-xl hover:shadow-xl hover:bg-blue-500 transition-color">
                 <div class="flex flex-col">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center space-x-3">
                             <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
-                            <h2 class="text-xl font-bold text-white">Perlu Direvisi</h2>
+                            <h2 class="text-xl font-bold text-white">Dokumen Disetujui</h2>
                         </div>
-                        <span class="text-4xl font-bold text-white">{{ $countButuhRevisi }}</span>
-                    </div>
-                </div>
-            </div>
-        </a>
-
-        <!-- Sudah Direvisi -->
-        <a href="{{ route('ormawa.riwayat', ['status' => 'direvisi']) }}" class="block">
-            <div
-                class="p-6 duration-300 bg-blue-400 shadow-lg rounded-xl hover:shadow-xl hover:bg-blue-500 transition-color">
-                <div class="flex flex-col">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-3">
-                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                            <h2 class="text-xl font-bold text-white">Sudah Direvisi</h2>
-                        </div>
-                        <span class="text-4xl font-bold text-white">{{ $countRevisi }}</span>
+                        <span class="text-4xl font-bold text-white">{{ $countDisetujui }}</span>
                     </div>
                 </div>
             </div>
@@ -152,9 +132,7 @@
                             </option>
                             <option value="disahkan" {{ request('status')=='disahkan' ? 'selected' : '' }}>Disahkan
                             </option>
-                            <option value="butuh_revisi" {{ request('status')=='butuh_revisi' ? 'selected' : '' }}>Perlu
-                                Direvisi</option>
-                            <option value="direvisi" {{ request('status')=='direvisi' ? 'selected' : '' }}>Revisi
+                            <option value="disetujui" {{ request('status')=='disetujui' ? 'selected' : '' }}>Disetujui
                             </option>
                         </select>
                     </div>
@@ -171,13 +149,12 @@
                             <th class="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                                 No. Surat</th>
                             <th class="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
+                                Jenis Surat</th>
+                            <th class="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                                 Tanggal Pengajuan</th>
                             <th class="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
-                                Hal</th>
-                            <th class="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
-                                Kepada/Tujuan</th>
-                            <th class="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
-                                Sebagai</th>
+                                Nama Pemohon</th>
+
                             <th class="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                                 Status</th>
                             <th class="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
@@ -203,44 +180,22 @@
                         @foreach($dokumens as $dokumen)
                         <tr>
                             <td class="px-6 py-4 whitespace-nowrap">{{ $dokumen->nomor_surat }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">{{ $dokumen->jenis_surat }}</td>
                             <td class="px-6 py-4 whitespace-nowrap">{{ $dokumen->tanggal_pengajuan }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">{{ $dokumen->perihal }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                @if ($dokumen->dosen)
-                                {{ $dokumen->dosen->nama_dosen }}
-                                @elseif ($dokumen->kemahasiswaan)
-                                {{ $dokumen->kemahasiswaan->nama_kemahasiswaan }}
-                                @else
-                                N/A
-                                @endif
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                @if ($dokumen->dosen)
-                                Dosen
-                                @elseif ($dokumen->kemahasiswaan)
-                                Kemahasiswaan
-                                @else
-                                N/A
-                                @endif
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                @php
-                                $statusClass = match($dokumen->status_dokumen) {
+                            <td class="px-6 py-4 whitespace-nowrap">{{ $dokumen->nama_pemohon }}</td>
+                            <td class="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap">
+                        @php
+                            $statusClass = match(strtolower($dokumen->status_dokumen)) {
                                 'diajukan' => 'bg-yellow-100 text-yellow-800',
                                 'disahkan' => 'bg-green-100 text-green-800',
-                                'butuh revisi' => 'bg-red-100 text-red-800',
-                                'sudah direvisi' => 'bg-blue-100 text-blue-800',
-                                'ditolak' => 'bg-red-100 text-red-800',
-                                'disetujui' => 'bg-green-100 text-green-800',
-                                'revisi' => 'bg-orange-100 text-orange-800',
+                                'disetujui' => 'bg-blue-100 text-blue-800',
                                 default => 'bg-gray-100 text-gray-800'
-                                };
-                                @endphp
-                                <span
-                                    class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $statusClass }}">
-                                    {{ ucfirst($dokumen->status_dokumen) }}
-                                </span>
-                            </td>
+                            };
+                        @endphp
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $statusClass }}">
+                            {{ $dokumen->status_dokumen }}
+                        </span>
+                    </td>
                             <td class="px-6 py-4 text-sm font-medium whitespace-nowrap">
                                 <a href="#" class="text-indigo-600 hover:text-indigo-900"
                                     onclick="showModal({{ $dokumen->id }})">
@@ -329,9 +284,6 @@
             const data = response.data;
             currentFileUrl = data.file_url;
 
-            // Check if document needs revision
-            const needsRevision = data.status_dokumen.toLowerCase() === 'butuh revisi';
-
             // Update modal content with document details and preview
             document.getElementById('modalContent').innerHTML = `
                 <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -374,48 +326,24 @@
                                 ${data.tujuan ? `
                                 <div class="flex justify-between">
                                     <dt class="font-medium text-gray-600">Tujuan:</dt>
-                                    <dd>${data.tujuan.nama} (${data.tujuan.jenis})</dd>
+                                    <dd>${data.tujuan.nama}</dd>
                                 </div>
                                 ` : ''}
                             </dl>
                         </div>
 
-                        ${needsRevision ? `
-                        <!-- Form Revisi Dokumen (hanya muncul jika status "butuh revisi") -->
-                        <div class="p-4 border border-yellow-200 rounded-lg bg-yellow-50">
-                            <h4 class="mb-4 text-lg font-semibold">Revisi Dokumen</h4>
-                            <form id="revisionForm" class="space-y-3">
-                                <div>
-                                    <label for="dokumen" class="block text-sm font-medium text-gray-700">Unggah Dokumen Revisi (PDF)</label>
-                                    <input type="file" id="dokumen" name="dokumen" accept=".pdf"
-                                        class="block w-full px-3 py-2 mt-1 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
-                                </div>
-                                <div>
-                                    <label for="keterangan" class="block text-sm font-medium text-gray-700">Keterangan Revisi (Opsional)</label>
-                                    <textarea id="keterangan" name="keterangan" rows="3"
-                                        class="block w-full px-3 py-2 mt-1 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
-                                </div>
-                                <button type="submit"
-                                    class="inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <div class="flex flex-col space-y-2">
+                            ${data.status_dokumen.toLowerCase() === 'disahkan' ? `
+                                <!-- Tombol Download (hanya muncul jika status disahkan) -->
+                                <a href="/ormawa/dokumen/${currentDocumentId}/download"
+                                   class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                                     </svg>
-                                    Kirim Revisi
-                                </button>
-                            </form>
-                        </div>
-                        ` : ''}
-
-                        <div class="flex flex-col space-y-2">
-                            <!-- Tombol Download -->
-                            <a href="/ormawa/dokumen/${currentDocumentId}/download"
-                               class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                </svg>
-                                Download Dokumen
-                            </a>
-                            <!-- Tombol Lihat di Tab Baru -->
+                                    Download Dokumen
+                                </a>
+                            ` : ''}
+                            <!-- Tombol Lihat di Tab Baru (selalu muncul) -->
                             <a href="/ormawa/dokumen/${currentDocumentId}/view"
                                target="_blank"
                                class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
@@ -425,15 +353,16 @@
                                 </svg>
                                 Lihat di Tab Baru
                             </a>
-                            ${data.status_dokumen.toLowerCase() === 'disahkan' ? `
-                            <!-- Tombol Bagikan ke WhatsApp (hanya muncul jika status 'disahkan') -->
-                            <a href="javascript:void(0)" onclick="shareToWhatsApp()"
-                               class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
-                                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M17.498 14.382c-.301-.15-1.767-.867-2.04-.966-.273-.101-.473-.15-.673.15-.197.295-.771.964-.944 1.162-.175.195-.349.21-.646.075-.3-.15-1.263-.465-2.403-1.485-.888-.795-1.484-1.77-1.66-2.07-.174-.3-.019-.465.13-.615.136-.135.301-.345.451-.523.146-.181.194-.301.297-.496.1-.21.049-.375-.025-.524-.075-.15-.672-1.62-.922-2.206-.24-.584-.487-.51-.672-.51-.172-.015-.371-.015-.571-.015-.2 0-.523.074-.797.359-.273.3-1.045 1.02-1.045 2.475s1.07 2.865 1.219 3.075c.149.195 2.105 3.195 5.1 4.485.714.3 1.27.48 1.704.629.714.227 1.365.195 1.88.121.574-.091 1.767-.721 2.016-1.426.255-.705.255-1.29.18-1.425-.074-.135-.27-.21-.57-.345m-5.446 7.443h-.016c-1.77 0-3.524-.48-5.055-1.38l-.36-.214-3.75.975 1.005-3.645-.239-.375c-.99-1.576-1.516-3.391-1.516-5.26 0-5.445 4.455-9.885 9.942-9.885 2.654 0 5.145 1.035 7.021 2.91 1.875 1.859 2.909 4.35 2.909 6.99-.004 5.444-4.46 9.885-9.935 9.885M20.52 3.449C18.24 1.245 15.24 0 12.045 0 5.463 0 .104 5.334.101 11.893c0 2.096.549 4.14 1.595 5.945L0 24l6.335-1.652c1.746.943 3.71 1.444 5.71 1.447h.006c6.585 0 11.946-5.336 11.949-11.896 0-3.176-1.24-6.165-3.495-8.411"/>
-                                </svg>
-                                Bagikan via WhatsApp
-                            </a>
+
+                            ${data.status_dokumen.toLowerCase() === 'disetujui' ? `
+                                <!-- Tombol Bubuhkan QR Code (hanya muncul jika status disetujui) -->
+                                <button onclick="editQrCode()"
+                                    class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+                                    </svg>
+                                    Bubuhkan QR Code
+                                </button>
                             ` : ''}
                         </div>
                     </div>
@@ -444,12 +373,6 @@
             `;
 
             // If the document needs revision, handle form submission
-            if (needsRevision) {
-                document.getElementById('revisionForm').addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    submitRevision(currentDocumentId);
-                });
-            }
         })
         .catch(error => {
             console.error('Error loading document:', error);
@@ -459,76 +382,6 @@
                     <span class="block mt-2 text-sm">Detail: ${error.toString()}</span>
                 </div>
             `;
-        });
-    }
-
-    function submitRevision(documentId) {
-        const formData = new FormData();
-        const fileInput = document.getElementById('dokumen');
-        const keterangan = document.getElementById('keterangan').value;
-
-        if (fileInput.files.length === 0) {
-            alert('Silakan pilih file dokumen revisi');
-            return;
-        }
-
-        formData.append('dokumen', fileInput.files[0]);
-        formData.append('keterangan', keterangan);
-        formData.append('_token', '{{ csrf_token() }}');
-
-        // Show loading state
-        const submitButton = document.querySelector('#revisionForm button[type="submit"]');
-        const originalButtonText = submitButton.innerHTML;
-        submitButton.disabled = true;
-        submitButton.innerHTML = `
-            <div class="inline-flex items-center">
-                <svg class="w-4 h-4 mr-2 -ml-1 text-white animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Mengirim...
-            </div>
-        `;
-
-        fetch(`/ormawa/dokumen/${documentId}/update`, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(response => {
-            // Log the raw response for debugging
-            console.log('Update response status:', response.status);
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-
-            return response.json();
-        })
-        .then(response => {
-            // Log the parsed response
-            console.log('Update response data:', response);
-
-            if (!response.success) {
-                throw new Error(response.message || 'Terjadi kesalahan saat mengirim revisi');
-            }
-
-            // Close modal and refresh page to show updated status
-            closeModal();
-
-            // Show success message and reload page
-            alert('Revisi dokumen berhasil dikirim');
-            window.location.reload();
-        })
-        .catch(error => {
-            console.error('Error updating document:', error);
-            alert(`${error.message || 'Terjadi kesalahan saat mengirim revisi'}\nDetail: ${error.toString()}`);
-
-            // Reset button
-            submitButton.disabled = false;
-            submitButton.innerHTML = originalButtonText;
         });
     }
 
@@ -542,11 +395,7 @@
         const statusClasses = {
             'diajukan': 'bg-yellow-100 text-yellow-800',
             'disahkan': 'bg-green-100 text-green-800',
-            'butuh revisi': 'bg-red-100 text-red-800',
-            'sudah direvisi': 'bg-blue-100 text-blue-800',
-            'ditolak': 'bg-red-100 text-red-800',
-            'disetujui': 'bg-green-100 text-green-800',
-            'revisi': 'bg-orange-100 text-orange-800'
+            'disetujui': 'bg-blue-100 text-blue-800'
         };
         return statusClasses[status.toLowerCase()] || 'bg-gray-100 text-gray-800';
     }
@@ -558,112 +407,30 @@
         }
     });
 
-    // Function to share document via WhatsApp
-    // Updated function to share document via WhatsApp with PDF file
-function shareToWhatsApp() {
-    if (!currentDocumentId) return;
 
-    // Get document details from the modal content
-    const modalContent = document.getElementById('modalContent');
-    const documentDetails = {
-        perihal: modalContent.querySelector('dl div:nth-child(3) dd')?.textContent?.trim() || 'Dokumen',
-        nomorSurat: modalContent.querySelector('dl div:nth-child(1) dd')?.textContent?.trim() || '',
-        tanggalPengajuan: modalContent.querySelector('dl div:nth-child(2) dd')?.textContent?.trim() || '',
-        status: modalContent.querySelector('dl div:nth-child(4) dd span')?.textContent?.trim() || '',
-        tujuan: modalContent.querySelector('dl div:last-child dd')?.textContent?.trim() || ''
-    };
-
-    // Create message text
-    const messageText = `*INFORMASI DOKUMEN RESMI*\n\n` +
-        `Dokumen dengan detail berikut telah disahkan:\n\n` +
-        ` *Perihal:* ${documentDetails.perihal}\n` +
-        ` *Nomor Surat:* ${documentDetails.nomorSurat}\n` +
-        ` *Tanggal Pengajuan:* ${documentDetails.tanggalPengajuan}\n` +
-        ` *Tujuan:* ${documentDetails.tujuan}\n\n` +
-        `Status dokumen: *${documentDetails.status.toUpperCase()}*\n\n` +
-        `Dokumen telah dilampirkan dalam format PDF.`;
-
-    // Create direct download URL
-    const downloadUrl = `/ormawa/dokumen/${currentDocumentId}/download`;
-    const fileName = `dokumen_${documentDetails.nomorSurat.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
-
-    // Show sharing dialog
-    Swal.fire({
-        title: 'Bagikan ke WhatsApp',
-        html: `
-            <div class="text-left">
-                <div class="mb-4">
-                    <label class="block mb-2 text-sm font-medium text-gray-700">Teks pesan:</label>
-                    <textarea id="whatsappMessage" class="w-full p-2 text-sm border border-gray-300 rounded-md resize-none" rows="10">${messageText}</textarea>
-                </div>
-
-                <div class="p-3 rounded-md bg-gray-50">
-                    <div class="flex items-center justify-between mb-2">
-                        <p class="text-sm font-medium text-gray-700">Dokumen PDF:</p>
-                        <button type="button" onclick="downloadPDF('${downloadUrl}', '${fileName}')"
-                           class="flex items-center text-sm text-blue-600 hover:text-blue-800">
-                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                            </svg>
-                            Download PDF
-                        </button>
-                    </div>
-                </div>
-
-                <div class="mt-4 text-sm text-gray-500">
-                    <p>Langkah-langkah membagikan dokumen:</p>
-                    <ol class="ml-4 list-decimal">
-                        <li>Klik "Download PDF" untuk mengunduh dokumen</li>
-                        <li>Klik "Bagikan ke WhatsApp" untuk membuka WhatsApp</li>
-                        <li>Pilih tujuan chat di WhatsApp</li>
-                        <li>Kirim pesan teks</li>
-                        <li>Lampirkan file PDF yang sudah diunduh</li>
-                    </ol>
-                </div>
-            </div>
-        `,
-        showCancelButton: true,
-        confirmButtonText: 'Bagikan ke WhatsApp',
-        confirmButtonColor: '#25D366',
-        cancelButtonText: 'Batal',
-        reverseButtons: true,
-        preConfirm: () => {
-            const updatedMessage = document.getElementById('whatsappMessage').value;
-            return { message: updatedMessage };
-        }
-    }).then((result) => {
-        if (result.isConfirmed) {
-            // Open WhatsApp with the message
-            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(result.value.message)}`;
-            window.open(whatsappUrl, '_blank');
-        }
-    });
-}
-
-// Helper function to download PDF
-function downloadPDF(url, fileName) {
-    fetch(url)
-        .then(response => response.blob())
-        .then(blob => {
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = fileName;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-        })
-        .catch(error => {
-            console.error('Error downloading file:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Gagal mengunduh dokumen',
-                text: 'Terjadi kesalahan saat mengunduh dokumen.',
-                confirmButtonColor: '#dc2626'
+    // Helper function to download PDF
+    function downloadPDF(url, fileName) {
+        fetch(url)
+            .then(response => response.blob())
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            })
+            .catch(error => {
+                console.error('Error downloading file:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal mengunduh dokumen',
+                    text: 'Terjadi kesalahan saat mengunduh dokumen.',
+                    confirmButtonColor: '#dc2626'
+                });
             });
-        });
-}
+    }
 </script>
 @endsection

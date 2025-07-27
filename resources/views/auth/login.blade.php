@@ -18,7 +18,7 @@
 
             <div class="relative w-full p-6 md:w-1/2 md:p-10">
                 <div class="absolute inset-0 md:hidden">
-                    <img src="{{ asset('images/gambar_login.png') }}" alt="Building"
+                    <img src="{{ asset('images/gambar_login.png ') }}" alt="Building"
                         class="object-cover object-center w-full h-full opacity-5">
                 </div>
 

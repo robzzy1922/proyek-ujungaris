@@ -14,7 +14,7 @@
         height: 100%;
         overflow: hidden; /* Prevent content from overflowing */
     }
-    
+
     #pdfViewer {
         background-color: white;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -158,14 +158,14 @@
         <div id="pdfContainer" class="relative w-full">
             <!-- PDF Viewer -->
             <canvas id="pdfViewer" class="w-full h-full"></canvas>
-            
+
             <!-- Kontrol Halaman -->
             <div class="page-controls">
                 <button id="prevPage" disabled>Previous</button>
                 <span id="pageInfo">Page: <span id="pageNum">1</span> / <span id="pageCount">1</span></span>
                 <button id="nextPage">Next</button>
             </div>
-            
+
             <!-- QR Code Draggable -->
             <div id="qrCode" class="absolute bg-white rounded-lg shadow-lg"
                  style="width: 100px; height: 100px; top: 50px; left: 50px;">
@@ -216,16 +216,16 @@
 
     async function renderPage(num) {
         pageRendering = true;
-        
+
         try {
             const page = await pdfDoc.getPage(num);
             const canvas = document.getElementById('pdfViewer');
             const context = canvas.getContext('2d');
-            
+
             // Calculate scale based on container width
             const containerWidth = canvas.parentElement.clientWidth;
             const viewport = page.getViewport({ scale: 1 });
-            
+
             // Increase scale for better visibility
             const scale = Math.min(
                 (containerWidth - 20) / viewport.width, // Reduced padding
@@ -241,7 +241,7 @@
                 canvasContext: context,
                 viewport: scaledViewport
             };
-            
+
             await page.render(renderContext).promise;
             pageRendering = false;
 
@@ -286,7 +286,7 @@
             const url = "{{ asset('storage/' . $dokumen->file) }}";
             pdfDoc = await pdfjsLib.getDocument(url).promise;
             document.getElementById('pageCount').textContent = pdfDoc.numPages;
-            
+
             // Render halaman pertama
             renderPage(pageNum);
 
@@ -371,15 +371,15 @@
     function calculateRelativePosition(element, container) {
         const elementRect = element.getBoundingClientRect();
         const containerRect = container.getBoundingClientRect();
-        
+
         // Hitung posisi relatif dalam persentase
         const x = ((elementRect.left - containerRect.left) / containerRect.width) * 100;
         const y = ((elementRect.top - containerRect.top) / containerRect.height) * 100;
-        
+
         // Hitung ukuran relatif dalam persentase
         const width = (elementRect.width / containerRect.width) * 100;
         const height = (elementRect.height / containerRect.height) * 100;
-        
+
         return {
             x: x,
             y: y,

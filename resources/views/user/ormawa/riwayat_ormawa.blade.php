@@ -1,4 +1,4 @@
-@extends('layouts.ormawa')
+@extends('layouts.app_admin')
 @section('title', 'Riwayat Pengajuan')
 @section('content')
 <div class="container flex-grow px-4 mx-auto mt-8 max-w-5xl">
@@ -28,9 +28,7 @@
                     <option value="">Semua Status</option>
                     <option value="diajukan" {{ request('status')=='diajukan' ? 'selected' : '' }}>Diajukan</option>
                     <option value="disahkan" {{ request('status')=='disahkan' ? 'selected' : '' }}>Disahkan</option>
-                    <option value="butuh_revisi" {{ request('status')=='butuh_revisi' ? 'selected' : '' }}>Perlu
-                        Direvisi</option>
-                    <option value="direvisi" {{ request('status')=='direvisi' ? 'selected' : '' }}>Direvisi</option>
+                    <option value="disetujui" {{ request('status')=='disetujui' ? 'selected' : '' }}>Disetujui</option>
                 </select>
             </form>
         </div>
@@ -48,10 +46,8 @@
                         Tanggal</th>
                     <th
                         class="px-3 md:px-6 py-2 md:py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
-                        Hal</th>
-                    <th
-                        class="hidden md:table-cell px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
-                        Tujuan</th>
+                        Nama Pemohon</th>
+
                     <th
                         class="px-3 md:px-6 py-2 md:py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                         Status</th>
@@ -80,17 +76,14 @@
                 <tr class="text-sm md:text-base">
                     <td class="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap">{{ $dokumen->nomor_surat }}</td>
                     <td class="hidden md:table-cell px-6 py-4 whitespace-nowrap">{{ $dokumen->tanggal_pengajuan }}</td>
-                    <td class="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap">{{ $dokumen->perihal }}</td>
-                    <td class="hidden md:table-cell px-6 py-4 whitespace-nowrap">{{ $dokumen->dosen ?
-                        $dokumen->dosen->nama_dosen : 'Kemahasiswaan' }}</td>
+                    <td class="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap">{{ $dokumen->nama_pemohon }}</td>
+
                     <td class="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap">
                         @php
                             $statusClass = match(strtolower($dokumen->status_dokumen)) {
                                 'diajukan' => 'bg-yellow-100 text-yellow-800',
                                 'disahkan' => 'bg-green-100 text-green-800',
-                                'butuh revisi' => 'bg-red-100 text-red-800',
-                                'sudah direvisi' => 'bg-blue-100 text-blue-800',
-                                'revisi' => 'bg-orange-100 text-orange-800',
+                                'disetujui' => 'bg-blue-100 text-blue-800',
                                 default => 'bg-gray-100 text-gray-800'
                             };
                         @endphp
@@ -119,7 +112,6 @@
                     <path fill-rule="evenodd"
                         d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
                         clip-rule="evenodd" />
-                </svg>
             </a>
             <a href="#"
                 class="hidden md:inline-flex relative items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50">1</a>
@@ -140,50 +132,156 @@
     </div>
 </div>
 
-<div id="detailModal" class="hidden overflow-y-auto fixed inset-0 z-10 bg-black bg-opacity-50">
-    <div class="flex justify-center items-center min-h-screen p-4">
-        <div class="p-4 md:p-6 w-full max-w-md bg-white rounded-lg shadow-xl">
-            <div class="flex justify-between items-center">
-                <h3 class="text-base md:text-lg font-medium text-gray-900">Detail Dokumen</h3>
-                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
-            </div>
-            <div class="mt-4">
-                <div class="p-2 md:p-4 mb-4 bg-gray-100 rounded-lg border border-blue-500">
-                    <p id="modalContent" class="text-center text-sm">Loading...</p>
+<div id="detailModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 transition-opacity" aria-hidden="true">
+            <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+        </div>
+
+        <div class="inline-block overflow-hidden text-left align-bottom transition-all transform bg-white rounded-lg shadow-xl sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
+            <div class="px-4 pt-5 pb-4 bg-white sm:p-6 sm:pb-4">
+                <div class="flex items-center justify-between pb-4 mb-4 border-b">
+                    <h3 class="text-2xl font-semibold text-gray-900">Detail Dokumen</h3>
+                    <button onclick="closeModal()" class="text-gray-400 hover:text-gray-500">
+                        <span class="sr-only">Close</span>
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
                 </div>
-                <div class="flex flex-col md:flex-row gap-2 justify-between">
-                    <button
-                        class="px-4 py-2 text-sm text-white bg-blue-500 rounded-lg hover:bg-blue-600 w-full md:w-auto">DOWNLOAD</button>
-                    <button
-                        class="px-4 py-2 text-sm text-white bg-yellow-500 rounded-lg hover:bg-yellow-600 w-full md:w-auto">LIHAT</button>
+                <div id="modalContent" class="space-y-4">
+                    <!-- Content will be loaded here -->
                 </div>
             </div>
         </div>
     </div>
 </div>
+
 <script>
-    function showModal(dokumenId, fileUrl) {
-            document.getElementById('modalContent').innerHTML = `<iframe src="${fileUrl}" width="100%" height="300px"></iframe>`;
-            document.getElementById('detailModal').classList.remove('hidden');
+function showModal(documentId) {
+    const modal = document.getElementById('detailModal');
+    const modalContent = document.getElementById('modalContent');
 
-            const lihatButton = document.querySelector('#detailModal .bg-yellow-500');
-            lihatButton.onclick = function() {
-                window.open(fileUrl, '_blank');
-            };
+    // Show loading state
+    modalContent.innerHTML = `
+        <div class="flex items-center justify-center py-8">
+            <div class="w-8 h-8 border-b-2 border-blue-500 rounded-full animate-spin"></div>
+            <span class="ml-2">Memuat dokumen...</span>
+        </div>
+    `;
 
-            const downloadButton = document.querySelector('#detailModal .bg-blue-500');
-            downloadButton.onclick = function() {
-                const link = document.createElement('a');
-                link.href = fileUrl;
-                link.download = fileUrl.split('/').pop();
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            };
+    modal.classList.remove('hidden');
+
+    // Fetch document details
+    fetch(`/ormawa/dokumen/${documentId}`, {
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(response => {
+        if (!response.success) {
+            throw new Error(response.message || 'Terjadi kesalahan saat memuat dokumen');
         }
 
-        function closeModal() {
-            document.getElementById('detailModal').classList.add('hidden');
-        }
+        const data = response.data;
+
+        // Update modal content with document details
+        modalContent.innerHTML = `
+            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+                <div class="space-y-4">
+                    <div class="p-4 rounded-lg bg-gray-50">
+                        <h4 class="mb-4 text-lg font-semibold">Informasi Dokumen</h4>
+                        <dl class="space-y-2">
+                            <div class="flex justify-between">
+                                <dt class="font-medium text-gray-600">Nomor Surat:</dt>
+                                <dd>${data.nomor_surat || '-'}</dd>
+                            </div>
+                            <div class="flex justify-between">
+                                <dt class="font-medium text-gray-600">Jenis Surat:</dt>
+                                <dd>${data.jenis_surat}</dd>
+                            </div>
+                            <div class="flex justify-between">
+                                <dt class="font-medium text-gray-600">Tanggal Pengajuan:</dt>
+                                <dd>${data.tanggal_pengajuan}</dd>
+                            </div>
+                            <div class="flex justify-between">
+                                <dt class="font-medium text-gray-600">Perihal:</dt>
+                                <dd>${data.perihal}</dd>
+                            </div>
+                            <div class="flex justify-between">
+                                <dt class="font-medium text-gray-600">Status:</dt>
+                                <dd>
+                                    <span class="px-2 py-1 text-sm rounded-full ${getStatusClass(data.status_dokumen)}">
+                                        ${data.status_dokumen}
+                                    </span>
+                                </dd>
+                            </div>
+                            ${data.keterangan_revisi ? `
+                            <div class="flex justify-between">
+                                <dt class="font-medium text-gray-600">Keterangan Revisi:</dt>
+                                <dd class="text-red-600">${data.keterangan_revisi}</dd>
+                            </div>
+                            ` : ''}
+                            ${data.tujuan ? `
+                            <div class="flex justify-between">
+                                <dt class="font-medium text-gray-600">Tujuan:</dt>
+                                <dd>${data.tujuan.nama}</dd>
+                            </div>
+                            ` : ''}
+                        </dl>
+                    </div>
+
+                    <div class="flex flex-col space-y-2">
+                        ${data.status_dokumen.toLowerCase() === 'disahkan' ? `
+                            <a href="/ormawa/dokumen/${documentId}/download"
+                               class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                Download Dokumen
+                            </a>
+                        ` : ''}
+                        <a href="/ormawa/dokumen/${documentId}/view"
+                           target="_blank"
+                           class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                            </svg>
+                            Lihat di Tab Baru
+                        </a>
+                    </div>
+                </div>
+                <div class="h-[600px] border rounded-lg overflow-hidden">
+                    <iframe src="/ormawa/dokumen/${documentId}/view" class="w-full h-full" frameborder="0"></iframe>
+                </div>
+            </div>
+        `;
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        modalContent.innerHTML = `
+            <div class="py-8 text-center text-red-600">
+                ${error.message || 'Terjadi kesalahan saat memuat dokumen'}
+            </div>
+        `;
+    });
+}
+
+function closeModal() {
+    document.getElementById('detailModal').classList.add('hidden');
+}
+
+function getStatusClass(status) {
+    const statusClasses = {
+        'diajukan': 'bg-yellow-100 text-yellow-800',
+        'disahkan': 'bg-green-100 text-green-800',
+        'butuh revisi': 'bg-red-100 text-red-800',
+        'sudah direvisi': 'bg-blue-100 text-blue-800'
+    };
+    return statusClasses[status.toLowerCase()] || 'bg-gray-100 text-gray-800';
+}
 </script>
 @endsection

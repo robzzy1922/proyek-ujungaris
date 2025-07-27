@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\DB;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Illuminate\Support\Str;
 
 class OrmawaController extends Controller
 {
@@ -25,7 +27,7 @@ class OrmawaController extends Controller
             $search = $request->search;
             $query->where(function($q) use ($search) {
                 $q->where('nomor_surat', 'like', "%$search%")
-                  ->orWhere('perihal', 'like', "%$search%");
+                  ->orWhere('nama_pemohon', 'like', "%$search%");
             });
         }
 
@@ -39,17 +41,14 @@ class OrmawaController extends Controller
                                 ->where('status_dokumen', 'diajukan')->count();
         $countDisahkan = Dokumen::where('id_ormawa', auth()->guard('ormawa')->id())
                                 ->where('status_dokumen', 'disahkan')->count();
-        $countButuhRevisi = Dokumen::where('id_ormawa', auth()->guard('ormawa')->id())
-                                ->where('status_dokumen', 'butuh revisi')->count();
-        $countRevisi = Dokumen::where('id_ormawa', auth()->guard('ormawa')->id())
-                              ->where('status_dokumen', 'sudah direvisi')->count();
+        $countDisetujui = Dokumen::where('id_ormawa', auth()->guard('ormawa')->id())
+                                ->where('status_dokumen', 'disetujui')->count();
 
         return view('user.ormawa.ormawa_dashboard', compact(
             'dokumens',
             'countDiajukan',
             'countDisahkan',
-            'countButuhRevisi',
-            'countRevisi'
+            'countDisetujui'
         ));
     }
 
@@ -67,10 +66,10 @@ class OrmawaController extends Controller
             // Validasi input
             $validated = $request->validate([
                 'nomor_surat' => 'required|string|max:255',
+                'jenis_surat' => 'required|string|max:255',
                 'nama_pengaju' => 'required|string|max:255',
-                'nama_ormawa' => 'required|string|max:255',
                 'tujuan_pengajuan' => 'required|in:dosen,kemahasiswaan',
-                'hal' => 'required|string|max:255',
+                'nama_pemohon' => 'required|string|max:255',
                 'unggah_dokumen' => 'required|file|mimes:pdf|max:2048',
                 'catatan' => 'nullable|string',
             ]);
@@ -87,7 +86,8 @@ class OrmawaController extends Controller
             // Create new document
             $dokumen = new Dokumen();
             $dokumen->nomor_surat = $request->nomor_surat;
-            $dokumen->perihal = $request->hal;
+            $dokumen->jenis_surat = $request->jenis_surat;
+            $dokumen->nama_pemohon = $request->nama_pemohon;
             $dokumen->file = $filePath;
             $dokumen->keterangan = $request->catatan;
             $dokumen->tanggal_pengajuan = now();
@@ -135,7 +135,8 @@ class OrmawaController extends Controller
             $search = $request->search;
             $query->where(function($q) use ($search) {
                 $q->where('nomor_surat', 'like', "%$search%")
-                  ->orWhere('perihal', 'like', "%$search%")
+                  ->orWhere('jenis_surat', 'like', "%$search%")
+                  ->orWhere('nama_pemohon', 'like', "%$search%")
                   ->orWhere('status_dokumen', 'like', "%$search%");
             });
         }
@@ -492,8 +493,9 @@ class OrmawaController extends Controller
                 'data' => [
                     'id' => $dokumen->id,
                     'nomor_surat' => $dokumen->nomor_surat,
+                    'jenis_surat' => $dokumen->jenis_surat,
                     'tanggal_pengajuan' => $tanggalPengajuan,
-                    'perihal' => $dokumen->perihal,
+                    'nama_pemohon' => $dokumen->nama_pemohon,
                     'status_dokumen' => ucfirst($dokumen->status_dokumen),
                     'keterangan_revisi' => $dokumen->keterangan_revisi,
                     'keterangan_pengirim' => $dokumen->keterangan_pengirim,
@@ -741,6 +743,196 @@ class OrmawaController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat menampilkan dokumen'
+            ], 500);
+        }
+    }
+
+    public function generateQrCode($id)
+    {
+        try {
+            $dokumen = Dokumen::findOrFail($id);
+
+            if ($dokumen->status_dokumen !== 'disetujui') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Dokumen harus berstatus disetujui untuk membubuhkan QR Code'
+                ], 400);
+            }
+
+            // Generate kode pengesahan jika belum ada
+            if (!$dokumen->kode_pengesahan) {
+                $dokumen->kode_pengesahan = Str::random(10);
+                $dokumen->save();
+            }
+
+            // Buat URL verifikasi
+            $verificationUrl = route('verify.document', ['id' => $id, 'kode' => $dokumen->kode_pengesahan]);
+
+            // Generate QR Code dengan path yang benar
+            $qrCodePath = 'qrcodes/qr_' . $id . '_' . time() . '.png';
+            $fullPath = storage_path('app/public/' . $qrCodePath);
+
+            // Pastikan direktori exists
+            if (!file_exists(dirname($fullPath))) {
+                mkdir(dirname($fullPath), 0755, true);
+            }
+
+            // Generate QR code menggunakan SimpleSoftwareIO
+            QrCode::format('png')
+                  ->size(400)
+                  ->margin(1)
+                  ->generate($verificationUrl, $fullPath);
+
+            // Update dokumen dengan path QR code
+            $dokumen->update([
+                'qr_code_path' => $qrCodePath
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'qrCodeUrl' => Storage::url($qrCodePath),
+                'message' => 'QR Code berhasil dibuat'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('QR Code Generation Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membuat QR Code: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function editQrCode($id)
+    {
+        try {
+            $dokumen = Dokumen::findOrFail($id);
+
+            if ($dokumen->id_ormawa != auth()->guard('ormawa')->id()) {
+                abort(403, 'Unauthorized action.');
+            }
+
+            if ($dokumen->status_dokumen !== 'disetujui') {
+                return back()->with('error', 'Dokumen harus berstatus disetujui untuk mengedit QR Code');
+            }
+
+            // Generate QR code jika belum ada
+            if (!$dokumen->qr_code_path || !Storage::disk('public')->exists($dokumen->qr_code_path)) {
+                // Generate kode pengesahan baru
+                $dokumen->kode_pengesahan = Str::random(10);
+
+                // Set path QR code
+                $qrCodePath = 'qrcodes/qr_' . $dokumen->id . '_' . time() . '.png';
+                $fullPath = storage_path('app/public/' . $qrCodePath);
+
+                // Buat direktori jika belum ada
+                if (!file_exists(dirname($fullPath))) {
+                    mkdir(dirname($fullPath), 0755, true);
+                }
+
+                // Generate QR code
+                QrCode::format('png')
+                      ->size(400)
+                      ->margin(1)
+                      ->generate(
+                          route('verify.document', ['id' => $dokumen->id, 'kode' => $dokumen->kode_pengesahan]),
+                          $fullPath
+                      );
+
+                // Update dokumen
+                $dokumen->update([
+                    'qr_code_path' => $qrCodePath,
+                    'kode_pengesahan' => $dokumen->kode_pengesahan
+                ]);
+            }
+
+            return view('user.ormawa.edit_qr', compact('dokumen'));
+
+        } catch (\Exception $e) {
+            Log::error('Error in editQrCode: ' . $e->getMessage());
+            return back()->with('error', 'Gagal memuat QR Code: ' . $e->getMessage());
+        }
+    }
+
+    public function saveQrPosition(Request $request, Dokumen $dokumen)
+    {
+        try {
+            $validated = $request->validate([
+                'x' => 'required|numeric',
+                'y' => 'required|numeric',
+                'width' => 'required|numeric',
+                'height' => 'required|numeric',
+                'page' => 'required|numeric'
+            ]);
+
+            if ($dokumen->status_dokumen !== 'disetujui') {
+                throw new \Exception('Dokumen harus berstatus disetujui untuk menyimpan posisi QR Code');
+            }
+
+            if (!$dokumen->qr_code_path || !Storage::disk('public')->exists($dokumen->qr_code_path)) {
+                throw new \Exception('QR Code belum di-generate');
+            }
+
+            $sourcePdfPath = storage_path('app/public/' . $dokumen->file);
+            if (!file_exists($sourcePdfPath)) {
+                throw new \Exception('File PDF sumber tidak ditemukan');
+            }
+
+            // Proses penambahan QR Code ke PDF
+            $pdf = new \setasign\Fpdi\Fpdi();
+            $pageCount = $pdf->setSourceFile($sourcePdfPath);
+
+            for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
+                $pdf->AddPage();
+                $tplIdx = $pdf->importPage($pageNo);
+                $pdf->useTemplate($tplIdx);
+
+                if ($pageNo === (int)$validated['page']) {
+                    $qrCodePath = storage_path('app/public/' . $dokumen->qr_code_path);
+
+                    $pageWidth = $pdf->GetPageWidth();
+                    $pageHeight = $pdf->GetPageHeight();
+
+                    $x = ($validated['x'] * $pageWidth) / 100;
+                    $y = ($validated['y'] * $pageHeight) / 100;
+                    $width = ($validated['width'] * $pageWidth) / 100;
+                    $height = ($validated['height'] * $pageHeight) / 100;
+
+                    $pdf->Image($qrCodePath, $x, $y, $width, $height);
+                }
+            }
+
+            $newFileName = 'signed_' . time() . '_' . basename($dokumen->file);
+            $newFilePath = 'dokumen/' . $newFileName;
+            $fullPath = storage_path('app/public/' . $newFilePath);
+
+            if (!file_exists(dirname($fullPath))) {
+                mkdir(dirname($fullPath), 0755, true);
+            }
+
+            $pdf->Output($fullPath, 'F');
+
+            $dokumen->update([
+                'file' => $newFilePath,
+                'qr_position_x' => $validated['x'],
+                'qr_position_y' => $validated['y'],
+                'qr_width' => $validated['width'],
+                'qr_height' => $validated['height'],
+                'qr_page' => $validated['page'],
+                'is_signed' => true,
+                'tanggal_verifikasi' => now()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'QR Code berhasil ditambahkan'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error in saveQrPosition: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menyimpan QR code: ' . $e->getMessage()
             ], 500);
         }
     }

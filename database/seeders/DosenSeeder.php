@@ -16,7 +16,7 @@ class DosenSeeder extends Seeder
     {
         $data = [
             [
-                'nama_dosen' => 'Dosen 1',
+                'nama_dosen' => 'Kuwu 1',
                 'nip' => '12345',
                 'email' => 'dosen1@example.com',
                 'password' => Hash::make('12345'),

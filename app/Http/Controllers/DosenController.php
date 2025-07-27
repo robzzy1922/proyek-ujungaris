@@ -41,7 +41,7 @@ class DosenController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('nomor_surat', 'like', "%{$search}%")
                   ->orWhere('tanggal_pengajuan', 'like', "%{$search}%")
-                  ->orWhere('perihal', 'like', "%{$search}%")
+                  ->orWhere('nama_pemohon', 'like', "%{$search}%")
                   ->orWhereHas('dosen', function ($q) use ($search) {
                       $q->where('nama_dosen', 'like', "%{$search}%");
                   })
@@ -55,12 +55,10 @@ class DosenController extends Controller
             ->where('status_dokumen', 'diajukan')->count();
         $countDisahkan = Dokumen::where('id_dosen', $dosen_id)
             ->where('status_dokumen', 'disahkan')->count();
-        $countRevisi = Dokumen::where('id_dosen', $dosen_id)
-            ->where('status_dokumen', 'sudah direvisi')->count();
-        $countButuhRevisi = Dokumen::where('id_dosen', $dosen_id)
-            ->where('status_dokumen', 'butuh revisi')->count();
+        $countDisetujui = Dokumen::where('id_dosen', $dosen_id)
+            ->where('status_dokumen', 'disetujui')->count();
 
-        return view('user.dosen.dashboard_dosen', compact('dokumens', 'status', 'countDiajukan', 'countDisahkan', 'countRevisi', 'countButuhRevisi'));
+        return view('user.dosen.dashboard_dosen', compact('dokumens', 'status', 'countDiajukan', 'countDisahkan', 'countDisetujui'));
     }
 
     public function create()
@@ -82,7 +80,7 @@ class DosenController extends Controller
             $search = $request->search;
             $query->where(function($q) use ($search) {
                 $q->where('nomor_surat', 'LIKE', "%{$search}%")
-                  ->orWhere('perihal', 'LIKE', "%{$search}%");
+                  ->orWhere('nama_pemohon', 'LIKE', "%{$search}%");
             });
         }
 
@@ -104,7 +102,7 @@ class DosenController extends Controller
             'id' => $dokumen->id,
             'nomor_surat' => $dokumen->nomor_surat,
             'tanggal_pengajuan' => $dokumen->tanggal_pengajuan,
-            'perihal' => $dokumen->perihal,
+            'nama_pemohon' => $dokumen->nama_pemohon,
             'status_dokumen' => ucfirst($dokumen->status_dokumen),
             'keterangan' => $dokumen->keterangan,
             'keterangan_revisi' => $dokumen->keterangan_revisi,
@@ -473,44 +471,6 @@ class DosenController extends Controller
         }
     }
 
-    public function submitRevisi(Request $request, $id)
-    {
-        try {
-            $dokumen = Dokumen::findOrFail($id);
-
-            $validated = $request->validate([
-                'keterangan' => 'required|string|max:1000'
-            ]);
-
-            DB::beginTransaction();
-            try {
-                $dokumen->status_dokumen = 'butuh revisi';
-                $dokumen->keterangan_revisi = $validated['keterangan'];
-                $dokumen->tanggal_revisi = now();
-                $dokumen->save();
-
-                DB::commit();
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Dokumen berhasil direvisi'
-                ]);
-            } catch (\Exception $e) {
-                DB::rollback();
-                throw $e;
-            }
-        } catch (\Exception $e) {
-            Log::error('Error in submitRevisi', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal melakukan revisi dokumen: ' . $e->getMessage()
-            ], 500);
-        }
-    }
 
     public function getVerificationStatus()
     {
@@ -830,4 +790,45 @@ class DosenController extends Controller
         }
     }
 
+    public function approveDokumen($id)
+    {
+        try {
+            $dokumen = Dokumen::findOrFail($id);
+
+            // Pastikan dokumen milik dosen yang sedang login
+            if ($dokumen->id_dosen != auth()->guard('dosen')->id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized action'
+                ], 403);
+            }
+
+            // Update status dokumen menjadi disetujui
+            $dokumen->update([
+                'status_dokumen' => 'disetujui',
+                'tanggal_verifikasi' => now()
+            ]);
+
+            // Create activity log if you have it
+            // ActivityLog::create([
+            //     'user_id' => auth()->guard('dosen')->id(),
+            //     'action' => 'approve',
+            //     'dokumen_id' => $dokumen->id,
+            //     'description' => 'Dokumen telah disetujui'
+            // ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Dokumen berhasil disetujui'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error approving document: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menyetujui dokumen: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

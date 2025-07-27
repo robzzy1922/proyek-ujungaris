@@ -14,8 +14,9 @@ return new class extends Migration
         Schema::create('dokumens', function (Blueprint $table) {
             $table->id();
             $table->string('nomor_surat');
-            $table->string('perihal');
-            $table->enum('status_dokumen', ['diajukan', 'disahkan', 'direvisi'])->default('diajukan');
+            $table->string('jenis_surat');
+            $table->string('nama_pemohon');
+            $table->enum('status_dokumen', ['diajukan', 'disahkan', 'disetujui'])->default('diajukan');
             $table->string('file');
             $table->string('keterangan')->nullable();
             $table->date('tanggal_pengajuan');
