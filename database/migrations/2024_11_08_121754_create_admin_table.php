@@ -12,10 +12,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('ormawas', function (Blueprint $table) {
+        Schema::create('admin', function (Blueprint $table) {
             $table->id();
-            $table->string('namaMahasiswa');
-            $table->string('nim', 20)->unique();
+            $table->string('namaAdmin');
+            $table->string('nip', 20)->unique();
             $table->string('email', 50)->unique();
             $table->string('noHp', 20);
             $table->string('password');

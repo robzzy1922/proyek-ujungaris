@@ -30,7 +30,7 @@ class DocumentController extends Controller
 
     public function show(Dokumen $dokumen)
     {
-        return view('user.dosen.show', compact('dokumen'));
+        return view('user.kuwu.show', compact('dokumen'));
     }
 
     public function saveBarcodePosition(Request $request, Dokumen $dokumen)
@@ -119,8 +119,8 @@ class DocumentController extends Controller
             TandaQr::create([
                 'data_qr' => $qrString,
                 'tanggal_pembuatan' => now(),
-                'id_ormawa' => $dokumen->id_ormawa,
-                'id_dosen' => auth()->id(),
+                'id_admin' => $dokumen->id_admin,
+                'id_kuwu' => auth()->id(),
                 'id_dokumen' => $dokumen->id
             ]);
 

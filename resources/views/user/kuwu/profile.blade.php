@@ -1,5 +1,5 @@
-@extends('layouts.ormawa')
-@section('title', 'Profil Ormawa')
+@extends('layouts.app_kuwu')
+@section('title', 'Profil Kuwu')
 @section('content')
     <div class="container px-4 py-8 mx-auto">
         <!-- Alert Component -->
@@ -61,18 +61,18 @@
             <div class="p-8 bg-gray-50 border-b">
                 <div class="flex justify-center items-center space-x-6">
                     <div class="flex relative flex-col items-center">
-                        @if($ormawa->profile)
-                        <img src="{{ asset('storage/' . $ormawa->profile) }}"
-                        alt="Profile Picture"
-                        class="object-cover w-20 h-20 rounded-full">
+                        @if($kuwu->profile)
+                            <img src="{{ asset('profiles/' . Auth::guard('kuwu')->user()->profile) }}"
+                                 alt="Profile Photo"
+                                 class="object-cover w-40 h-40 rounded-full border-4 border-white shadow-lg">
                         @else
                             <div class="flex justify-center items-center w-40 h-40 bg-gradient-to-r from-blue-400 to-blue-500 rounded-full border-4 border-white shadow-lg">
-                                <span class="text-5xl font-semibold text-white">{{ substr($ormawa->namaMahasiswa, 0, 1) }}</span>
+                                <span class="text-5xl font-semibold text-white">{{ substr($kuwu->nama_kuwu, 0, 1) }}</span>
                             </div>
                         @endif
 
                         <div class="flex mt-6 space-x-3">
-                            <form action="{{ route('ormawa.profile.photo.update') }}" method="POST" enctype="multipart/form-data" id="photoForm" class="inline">
+                            <form action="{{ route('kuwu.profile.photo.update') }}" method="POST" enctype="multipart/form-data" id="photoForm" class="inline">
                                 @csrf
                                 <input type="file" name="profile_photo" id="profile_photo" class="hidden" accept="image/*" onchange="this.form.submit()">
                                 <label for="profile_photo" class="inline-block px-4 py-2 text-sm font-medium text-white bg-blue-400 rounded-lg shadow-md transition duration-200 cursor-pointer hover:bg-blue-500">
@@ -80,8 +80,8 @@
                                 </label>
                             </form>
 
-                            @if($ormawa->profile)
-                                <form action="{{ route('ormawa.profile.photo.destroy') }}" method="POST" class="inline">
+                            @if($kuwu->profile)
+                                <form action="{{ route('kuwu.profile.photo.destroy') }}" method="POST" class="inline">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="inline-block px-4 py-2 text-sm font-medium text-red-600 bg-white rounded-lg border border-red-200 shadow-md transition duration-200 hover:bg-red-50">
@@ -95,15 +95,15 @@
             </div>
 
             <!-- Profile Information Form -->
-            <form action="{{ route('ormawa.profile.update') }}" method="POST" class="p-8">
+            <form action="{{ route('kuwu.profile.update') }}" method="POST" class="p-8">
                 @csrf
                 @method('PUT')
 
                 <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                     <div class="space-y-2">
-                        <label for="namaMahasiswa" class="block text-sm font-semibold text-gray-700">Name</label>
-                        <input type="text" name="namaMahasiswa" id="namaMahasiswa"
-                               value="{{ old('namaMahasiswa', $ormawa->namaMahasiswa) }}"
+                        <label for="namaKuwu" class="block text-sm font-semibold text-gray-700">Name</label>
+                        <input type="text" name="namaKuwu" id="namaKuwu"
+                               value="{{ old('namaKuwu', $kuwu->nama_kuwu) }}"
                                class="block px-4 py-3 w-full rounded-lg border border-gray-300 shadow-sm transition duration-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
                     </div>
 
@@ -111,7 +111,7 @@
                         <label for="email" class="block text-sm font-semibold text-gray-700">Email</label>
                         <div class="relative">
                             <input type="email" name="email" id="email"
-                                   value="{{ old('email', $ormawa->email) }}"
+                                   value="{{ old('email', $kuwu->email) }}"
                                    class="block px-4 py-3 pr-12 w-full rounded-lg border border-gray-300 shadow-sm transition duration-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
                             <div class="flex absolute inset-y-0 right-0 items-center pr-3">
                                 <span id="emailStatus" class="text-xs font-medium"></span>
@@ -123,7 +123,7 @@
                     <div class="space-y-2">
                         <label for="noHp" class="block text-sm font-semibold text-gray-700">Phone Number</label>
                         <input type="text" name="noHp" id="noHp"
-                               value="{{ old('noHp', $ormawa->noHp) }}"
+                               value="{{ old('noHp', $kuwu->no_hp) }}"
                                class="block px-4 py-3 w-full rounded-lg border border-gray-300 shadow-sm transition duration-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
                     </div>
                 </div>
@@ -251,7 +251,7 @@
 
         // Update email verification status indicator
         function updateEmailVerificationStatus() {
-            fetch('{{ route('ormawa.email.verification.status') }}')
+            fetch('{{ route('kuwu.email.verification.status') }}')
                 .then(response => response.json())
                 .then(data => {
                     const statusEl = document.getElementById('emailStatus');
@@ -297,11 +297,11 @@
             const emailInput = document.getElementById('email');
             emailInput.addEventListener('change', function() {
                 const newEmail = this.value;
-                if (newEmail && newEmail !== '{{ $ormawa->email }}') {
+                if (newEmail && newEmail !== '{{ $kuwu->email }}') {
                     const formData = new FormData();
                     formData.append('email', newEmail);
 
-                    fetch('{{ route('ormawa.email.show.verification') }}', {
+                    fetch('{{ route('kuwu.email.show.verification') }}', {
                         method: 'POST',
                         headers: {
                             'X-CSRF-TOKEN': '{{ csrf_token() }}'
@@ -349,15 +349,21 @@
                 const formData = new FormData();
                 formData.append('email', email);
 
-                fetch('{{ route('ormawa.email.send.otp') }}', {
+                console.log('Sending OTP to:', email);
+
+                fetch('{{ route('kuwu.email.send.otp') }}', {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': '{{ csrf_token() }}'
                     },
                     body: formData
                 })
-                .then(response => response.json())
+                .then(response => {
+                    console.log('Response status:', response.status);
+                    return response.json();
+                })
                 .then(data => {
+                    console.log('Response data:', data);
                     if (data.success) {
                         step1.classList.add('hidden');
                         step2.classList.remove('hidden');
@@ -368,7 +374,7 @@
                     }
                 })
                 .catch(error => {
-                    console.error('Error:', error);
+                    console.error('Error sending OTP:', error);
                     showAlert('Failed to send OTP. Please try again.', 'error');
                 });
             });
@@ -385,7 +391,7 @@
                 const formData = new FormData();
                 formData.append('otp', otp);
 
-                fetch('{{ route('ormawa.email.verify.otp') }}', {
+                fetch('{{ route('kuwu.email.verify.otp') }}', {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': '{{ csrf_token() }}'
@@ -396,7 +402,7 @@
                 .then(data => {
                     if (data.success) {
                         showAlert(data.message);
-                        verificationModal.classList.add('hidden');
+                        modal.classList.add('hidden');
                         clearInterval(countdownInterval);
                         setTimeout(() => {
                             window.location.reload();
@@ -415,11 +421,11 @@
             resendOtpBtn.addEventListener('click', function() {
                 console.log('Attempting to resend OTP');
 
-                fetch('{{ route('ormawa.email.resend.otp') }}', {
+                fetch('{{ route('kuwu.email.resend.otp') }}', {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    },
+                    }
                 })
                 .then(response => {
                     console.log('Response status:', response.status);

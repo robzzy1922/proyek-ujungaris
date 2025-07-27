@@ -4,8 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use App\Models\Ormawas;
-use App\Models\Dosen;
+use App\Models\Admin;
+use App\Models\Kuwu;
 use App\Models\Dokumen;
 
 class TandaQr extends Model
@@ -16,15 +16,15 @@ class TandaQr extends Model
     protected $fillable = [
         'data_qr',
         'tanggal_pembuatan',
-        'id_ormawa',
-        'id_dosen',
+        'id_admin',
+        'id_kuwu',
         'id_dokumen',
     ];
 
     // Relationship with Dosen model
-    public function dosen()
+    public function kuwu()
     {
-        return $this->belongsTo(Dosen::class, 'id_dosen');
+        return $this->belongsTo(Kuwu::class, 'id_kuwu');
     }
 
     // Relationship with Dokumen model
@@ -34,8 +34,8 @@ class TandaQr extends Model
     }
 
     // Relationship with Ormawa model
-    public function ormawa()
+    public function admin()
     {
-        return $this->belongsTo(Ormawas::class, 'id_ormawa');
+        return $this->belongsTo(Admin::class, 'id_admin');
     }
 }

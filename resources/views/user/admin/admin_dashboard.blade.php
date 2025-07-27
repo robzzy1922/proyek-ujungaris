@@ -1,6 +1,6 @@
 @extends('layouts.app_admin')
 
-@section('title', 'Dashboard Ormawa')
+@section('title', 'Dashboard Admin')
 @section('content')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <div class="container flex-grow max-w-5xl px-4 mx-auto mt-8">
@@ -50,7 +50,7 @@
 
     <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
         <!-- Dokumen Diajukan -->
-        <a href="{{ route('ormawa.riwayat', ['status' => 'diajukan']) }}" class="block">
+        <a href="{{ route('admin.riwayat', ['status' => 'diajukan']) }}" class="block">
             <div
                 class="p-6 duration-300 bg-yellow-400 shadow-lg rounded-xl hover:shadow-xl hover:bg-yellow-500 transition-color">
                 <div class="flex flex-col">
@@ -69,7 +69,7 @@
         </a>
 
         <!-- Dokumen Disahkan -->
-        <a href="{{ route('ormawa.riwayat', ['status' => 'disahkan']) }}" class="block">
+        <a href="{{ route('admin.riwayat', ['status' => 'disahkan']) }}" class="block">
             <div
                 class="p-6 duration-300 bg-green-400 shadow-lg rounded-xl hover:shadow-xl hover:bg-green-500 transition-color">
                 <div class="flex flex-col">
@@ -88,7 +88,7 @@
         </a>
 
         <!-- Dokumen Disetujui -->
-        <a href="{{ route('ormawa.riwayat', ['status' => 'disetujui']) }}" class="block">
+        <a href="{{ route('admin.riwayat', ['status' => 'disetujui']) }}" class="block">
             <div class="p-6 duration-300 bg-blue-400 shadow-lg rounded-xl hover:shadow-xl hover:bg-blue-500 transition-color">
                 <div class="flex flex-col">
                     <div class="flex items-center justify-between">
@@ -109,7 +109,7 @@
     <div class="mt-8">
         <div class="flex flex-col items-center justify-between mb-4 space-y-2 md:flex-row md:space-y-0">
             <div class="relative w-full md:w-64">
-                <form method="GET" action="{{ route('ormawa.dashboard') }}" class="flex">
+                <form method="GET" action="{{ route('admin.dashboard') }}" class="flex">
                     <div class="relative flex-grow">
                         <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari Surat"
                             class="w-full py-2 pl-10 pr-4 border rounded-l-lg">
@@ -125,7 +125,7 @@
                 </form>
             </div>
             <div>
-                <form method="GET" action="{{ route('ormawa.dashboard') }}">
+                <form method="GET" action="{{ route('admin.dashboard') }}">
                     <div>
                         <select name="status" class="px-4 py-2 border rounded-lg" onchange="this.form.submit()">
                             <option value="">Semua Status</option>
@@ -258,7 +258,7 @@
         document.getElementById('detailModal').classList.remove('hidden');
 
         // Fetch document details
-        fetch(`/ormawa/dokumen/${documentId}`, {
+        fetch(`/admin/dokumen/${documentId}`, {
             headers: {
                 'Accept': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest'
@@ -301,8 +301,8 @@
                                     <dd>${data.tanggal_pengajuan}</dd>
                                 </div>
                                 <div class="flex justify-between">
-                                    <dt class="font-medium text-gray-600">Perihal:</dt>
-                                    <dd>${data.perihal}</dd>
+                                    <dt class="font-medium text-gray-600">Nama Pemohon:</dt>
+                                    <dd>${data.nama_pemohon}</dd>
                                 </div>
                                 <div class="flex justify-between">
                                     <dt class="font-medium text-gray-600">Status:</dt>
@@ -312,31 +312,13 @@
                                         </span>
                                     </dd>
                                 </div>
-                                ${data.keterangan_revisi ? `
-                                <div class="flex justify-between">
-                                    <dt class="font-medium text-gray-600">Keterangan Revisi:</dt>
-                                    <dd class="text-red-600">${data.keterangan_revisi}</dd>
-                                </div>
-                                ` : ''}
-                                ${data.keterangan_pengirim && data.status_dokumen.toLowerCase() === 'sudah direvisi' ? `
-                                <div class="flex justify-between">
-                                    <dt class="font-medium text-gray-600">Keterangan Dari Ormawa:</dt>
-                                    <dd class="text-blue-600">${data.keterangan_pengirim}</dd>
-                                </div>
-                                ` : ''}
-                                ${data.tujuan ? `
-                                <div class="flex justify-between">
-                                    <dt class="font-medium text-gray-600">Tujuan:</dt>
-                                    <dd>${data.tujuan.nama}</dd>
-                                </div>
-                                ` : ''}
-                            </dl>
+                           </dl>
                         </div>
 
                         <div class="flex flex-col space-y-2">
                             ${data.status_dokumen.toLowerCase() === 'disahkan' ? `
                                 <!-- Tombol Download (hanya muncul jika status disahkan) -->
-                                <a href="/ormawa/dokumen/${currentDocumentId}/download"
+                                <a href="/admin/dokumen/${currentDocumentId}/download"
                                    class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -345,7 +327,7 @@
                                 </a>
                             ` : ''}
                             <!-- Tombol Lihat di Tab Baru (selalu muncul) -->
-                            <a href="/ormawa/dokumen/${currentDocumentId}/view"
+                            <a href="/admin/dokumen/${currentDocumentId}/view"
                                target="_blank"
                                class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -368,7 +350,7 @@
                         </div>
                     </div>
                     <div class="h-[600px] border rounded-lg overflow-hidden">
-                        <iframe src="/ormawa/dokumen/${currentDocumentId}/view" class="w-full h-full" frameborder="0"></iframe>
+                        <iframe src="/admin/dokumen/${currentDocumentId}/view" class="w-full h-full" frameborder="0"></iframe>
                     </div>
                 </div>
             `;
@@ -438,7 +420,7 @@
         if (!currentDocumentId) return;
 
         // Generate QR Code first
-        fetch(`/ormawa/dokumen/${currentDocumentId}/generate-qr`, {
+        fetch(`/admin/dokumen/${currentDocumentId}/generate-qr`, {
             method: 'GET',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
@@ -449,7 +431,7 @@
         .then(data => {
             if (data.success) {
                 // Redirect to QR editor page
-                window.location.href = `/ormawa/dokumen/${currentDocumentId}/edit-qr`;
+                window.location.href = `/admin/dokumen/${currentDocumentId}/edit-qr`;
             } else {
                 alert(data.message || 'Gagal membuat QR Code');
             }

@@ -46,7 +46,7 @@
             </div>
         @endif
 
-        <form action="{{ route('ormawa.pengajuan.store') }}" method="POST" enctype="multipart/form-data" class="w-full" id="pengajuanForm">
+        <form action="{{ route('admin.pengajuan.store') }}" method="POST" enctype="multipart/form-data" class="w-full" id="pengajuanForm">
             @csrf
             <div class="space-y-3 sm:space-y-4">
                 <div>
@@ -66,19 +66,19 @@
 
                 <div>
                     <label for="nama_pengaju" class="block mb-1 text-sm font-medium sm:text-base">Nama Pengaju</label>
-                    <input type="text" id="nama_pengaju" name="nama_pengaju" class="px-3 py-2 w-full text-sm bg-gray-200 rounded-md border sm:text-base" value="{{ $ormawa->namaMahasiswa }}" readonly required>
+                    <input type="text" id="nama_pengaju" name="nama_pengaju" class="px-3 py-2 w-full text-sm bg-gray-200 rounded-md border sm:text-base" value="{{ $admin->namaAdmin }}" readonly required>
                 </div>
 
                 <div>
-                    <input type="hidden" id="tujuan_pengajuan" name="tujuan_pengajuan" value="dosen">
+                    <input type="hidden" id="tujuan_pengajuan" name="tujuan_pengajuan" value="kuwu">
                 </div>
 
-                <div id="dosen_section">
+                <div id="kuwu_section">
                     <label for="kepada_tujuan" class="block mb-1 text-sm font-medium sm:text-base">Pilih Kuwu</label>
                     <select id="kepada_tujuan" name="kepada_tujuan" class="px-3 py-2 w-full text-sm rounded-md border sm:text-base" required>
                         <option value="">Pilih Kuwu</option>
-                        @foreach($dosenList as $dosen)
-                            <option value="{{ $dosen->id }}">{{ $dosen->nama_dosen }}</option>
+                        @foreach($kuwuList as $kuwu)
+                            <option value="{{ $kuwu->id }}">{{ $kuwu->nama_kuwu }}</option>
                         @endforeach
                     </select>
                     @error('kepada_tujuan')

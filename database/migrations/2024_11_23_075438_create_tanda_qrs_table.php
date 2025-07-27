@@ -16,15 +16,15 @@ return new class extends Migration
             $table->string('data_qr');
             $table->date('tanggal_pembuatan');
             $table->foreignId('id_dokumen')->constrained('dokumens')->onDelete('cascade');
-            $table->unsignedBigInteger('id_ormawa');
-            $table->unsignedBigInteger('id_dosen')->nullable(); // Allow null
-            $table->unsignedBigInteger('id_kemahasiswaan')->nullable(); // Allow null
+            $table->unsignedBigInteger('id_admin');
+            $table->unsignedBigInteger('id_kuwu')->nullable(); // Allow null
+
             $table->timestamps();
 
 
-            $table->foreign('id_ormawa')->references('id')->on('ormawas');
-            $table->foreign('id_dosen')->references('id')->on('dosen');
-            $table->foreign('id_kemahasiswaan')->references('id')->on('kemahasiswaan');
+            $table->foreign('id_admin')->references('id')->on('admin');
+            $table->foreign('id_kuwu')->references('id')->on('kuwu');
+
         });
     }
 

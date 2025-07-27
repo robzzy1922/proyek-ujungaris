@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\Ormawa;
 
 class LoginAuthController extends Controller
 {
@@ -18,29 +17,18 @@ class LoginAuthController extends Controller
         $credentials = $request->only('nip', 'password');
         $role = $request->input('role');
 
-        if ($role === 'kemahasiswaan') {
-            if (Auth::guard('kemahasiswaan')->attempt($credentials)) {
-                return redirect()->route('kemahasiswaan.dashboard');
-            }
-        }
-
         $password = $request->input('password');
 
         switch ($role) {
             case 'admin':
-                $credentials = ['email' => $request->input('email'), 'password' => $password];
+                $credentials = ['nip' => $request->input('nip'), 'password' => $password];
                 $guard = 'admin';
                 $redirect = '/admin/dashboard';
                 break;
-            case 'ormawa':
-                $credentials = ['nim' => $request->input('nim'), 'password' => $password];
-                $guard = 'ormawa';
-                $redirect = '/ormawa/dashboard';
-                break;
-            case 'dosen':
+            case 'kuwu':
                 $credentials = ['nip' => $request->input('nip'), 'password' => $password];
-                $guard = 'dosen';
-                $redirect = '/dosen/dashboard';
+                $guard = 'kuwu';
+                $redirect = '/kuwu/dashboard';
                 break;
             default:
                 return back()->withErrors(['role' => 'Role tidak valid']);
@@ -63,17 +51,8 @@ class LoginAuthController extends Controller
             return redirect()->intended($redirect);
         }
 
-        if ($role === 'ormawa') {
-            return back()->withErrors(['login' => 'NIM atau password salah, tolong masukkan ulang.']);
-        } elseif ($role === 'dosen') {
-            return back()->withErrors(['login' => 'NIP atau password salah, tolong masukkan ulang.']);
-        }
-
-        if ($request->expectsJson()) {
-            return response()->json(['status' => 'error', 'message' => 'Kredensial tidak valid'], 401);
-        }
-
-        return back()->withErrors(['login' => 'Kredensial tidak valid']);
+        // Error message for both admin and kuwu since they use the same credentials
+        return back()->withErrors(['login' => 'NIP atau password salah, tolong masukkan ulang.']);
     }
 
     public function logout(Request $request)
@@ -81,5 +60,7 @@ class LoginAuthController extends Controller
         Auth::guard()->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
+        return redirect()->route('login');
     }
 }

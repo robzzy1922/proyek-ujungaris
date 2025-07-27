@@ -6,7 +6,7 @@
 
     <div class="flex flex-col gap-4 mb-4 md:flex-row md:justify-between md:items-center">
         <div class="w-full md:w-64">
-            <form method="GET" action="{{ route('dosen.riwayat') }}" class="flex">
+            <form method="GET" action="{{ route('kuwu.riwayat') }}" class="flex">
                 <div class="relative flex-grow">
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari Pengajuan"
                         class="w-full py-2 pl-10 pr-4 border rounded-lg">
@@ -22,16 +22,14 @@
             </form>
         </div>
         <div class="w-full md:w-auto">
-            <form method="GET" action="{{ route('dosen.riwayat') }}">
+            <form method="GET" action="{{ route('kuwu.riwayat') }}">
                 <select name="status" class="w-full px-4 py-2 text-sm border rounded-lg md:w-auto"
                     onchange="this.form.submit()">
                     <option value="">Semua Status</option>
                     <option value="diajukan" {{ request('status')=='diajukan' ? 'selected' : '' }}>Diajukan</option>
                     <option value="disahkan" {{ request('status')=='disahkan' ? 'selected' : '' }}>Disahkan</option>
-                    <option value="butuh_revisi" {{ request('status')=='butuh revisi' ? 'selected' : '' }}>Butuh Revisi
-                    </option>
-                    <option value="direvisi" {{ request('status')=='sudah direvisi' ? 'selected' : '' }}>Direvisi
-                    </option>
+                    <option value="disetujui" {{ request('status')=='disetujui' ? 'selected' : '' }}>Disetujui</option>
+
                 </select>
             </form>
         </div>
@@ -45,7 +43,7 @@
                     </th>
                     <th class="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">Tanggal
                         Pengajuan</th>
-                    <th class="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">Hal</th>
+                    <th class="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">Nama Pemohon</th>
                     <th class="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">Status
                     </th>
                     <th class="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">Aksi</th>
@@ -56,7 +54,7 @@
                 <tr data-id="{{ $document->id }}">
                     <td class="px-6 py-4 whitespace-nowrap" data-nomor>{{ $document->nomor_surat }}</td>
                     <td class="px-6 py-4 whitespace-nowrap" data-tanggal>{{ $document->tanggal_pengajuan }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap" data-perihal>{{ $document->perihal }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap" data-perihal>{{ $document->nama_pemohon }}</td>
                     <td class="px-6 py-4 whitespace-nowrap" data-status>
                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
                                     {{ $document->status_dokumen == 'disahkan' ? 'bg-green-100 text-green-800' : ($document->status_dokumen == 'diajukan' ? 'bg-yellow-100 text-yellow-800' :
@@ -164,7 +162,7 @@ function showModal(documentId, pdfUrl) {
     currentFileUrl = pdfUrl;
 
     // Fetch document details
-    fetch(`/dosen/dokumen/${documentId}`)
+    fetch(`/kuwu/dokumen/${documentId}`)
         .then(response => response.json())
         .then(data => {
             document.getElementById('modalContent').innerHTML = `
@@ -181,8 +179,8 @@ function showModal(documentId, pdfUrl) {
                         <p class="mt-1">${data.tanggal_pengajuan}</p>
                     </div>
                     <div>
-                        <p class="text-sm font-medium text-gray-500">Perihal</p>
-                        <p class="mt-1">${data.perihal}</p>
+                        <p class="text-sm font-medium text-gray-500">Nama Pemohon</p>
+                        <p class="mt-1">${data.nama_pemohon}</p>
                     </div>
                     <div>
                         <p class="text-sm font-medium text-gray-500">Status</p>

@@ -92,7 +92,7 @@
         <nav class="flex mb-4" aria-label="Breadcrumb">
             <ol class="inline-flex items-center space-x-1 md:space-x-3">
                 <li class="inline-flex items-center">
-                    <a href="{{ route('ormawa.dashboard') }}" class="inline-flex items-center text-gray-700 hover:text-blue-600">
+                    <a href="{{ route('admin.dashboard') }}" class="inline-flex items-center text-gray-700 hover:text-blue-600">
                         <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
                         </svg>
@@ -154,7 +154,7 @@
                     class="px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600">
                 Simpan Posisi
             </button>
-            <a href="{{ route('ormawa.dashboard') }}"
+            <a href="{{ route('admin.dashboard') }}"
                class="px-4 py-2 text-gray-700 bg-gray-200 rounded hover:bg-gray-300">
                 Batal
             </a>
@@ -162,7 +162,7 @@
     @else
         <div class="text-center py-8">
             <p class="text-red-500">Dokumen tidak ditemukan.</p>
-            <a href="{{ route('ormawa.dashboard') }}" class="mt-4 inline-block px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+            <a href="{{ route('admin.dashboard') }}" class="mt-4 inline-block px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
                 Kembali ke Dashboard
             </a>
         </div>
@@ -260,7 +260,7 @@
         const container = document.getElementById('pdfViewer');
         const position = calculateRelativePosition(qrElement, container);
 
-        fetch(`/ormawa/dokumen/${dokumenId}/save-qr-position`, {
+        fetch(`/admin/dokumen/${dokumenId}/save-qr-position`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -277,7 +277,7 @@
                     icon: 'success',
                     confirmButtonText: 'OK'
                 }).then(() => {
-                    window.location.href = '{{ route("ormawa.dashboard") }}';
+                    window.location.href = '{{ route("admin.dashboard") }}';
                 });
             } else {
                 Swal.fire({

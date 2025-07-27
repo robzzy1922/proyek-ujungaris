@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Dosen;
+use App\Models\Kuwu;
 use App\Models\Dokumen;
 use setasign\Fpdi\Fpdi;
 use Illuminate\Http\Request;
@@ -22,16 +22,16 @@ use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Mail;
 
-class DosenController extends Controller
+class KuwuController extends Controller
 {
-    public function dashboardDosen(Request $request)
+    public function dashboardKuwu(Request $request)
     {
         $status = $request->input('status');
         $search = $request->input('search');
-        $dosen_id = auth()->guard('dosen')->user()->id;
+        $kuwu_id = auth()->guard('kuwu')->user()->id;
 
-        $query = Dokumen::with('dosen')
-            ->where('id_dosen', $dosen_id);
+        $query = Dokumen::with('kuwu')
+            ->where('id_kuwu', $kuwu_id);
 
         if ($status) {
             $query->where('status_dokumen', $status);
@@ -42,8 +42,8 @@ class DosenController extends Controller
                 $q->where('nomor_surat', 'like', "%{$search}%")
                   ->orWhere('tanggal_pengajuan', 'like', "%{$search}%")
                   ->orWhere('nama_pemohon', 'like', "%{$search}%")
-                  ->orWhereHas('dosen', function ($q) use ($search) {
-                      $q->where('nama_dosen', 'like', "%{$search}%");
+                  ->orWhereHas('kuwu', function ($q) use ($search) {
+                      $q->where('nama_kuwu', 'like', "%{$search}%");
                   })
                   ->orWhere('status_dokumen', 'like', "%{$search}%");
             });
@@ -51,24 +51,24 @@ class DosenController extends Controller
 
         $dokumens = $query->latest()->get();
 
-        $countDiajukan = Dokumen::where('id_dosen', $dosen_id)
+        $countDiajukan = Dokumen::where('id_kuwu', $kuwu_id)
             ->where('status_dokumen', 'diajukan')->count();
-        $countDisahkan = Dokumen::where('id_dosen', $dosen_id)
+        $countDisahkan = Dokumen::where('id_kuwu', $kuwu_id)
             ->where('status_dokumen', 'disahkan')->count();
-        $countDisetujui = Dokumen::where('id_dosen', $dosen_id)
+        $countDisetujui = Dokumen::where('id_kuwu', $kuwu_id)
             ->where('status_dokumen', 'disetujui')->count();
 
-        return view('user.dosen.dashboard_dosen', compact('dokumens', 'status', 'countDiajukan', 'countDisahkan', 'countDisetujui'));
+        return view('user.kuwu.dashboard_kuwu', compact('dokumens', 'status', 'countDiajukan', 'countDisahkan', 'countDisetujui'));
     }
 
     public function create()
     {
-        return view('user.dosen.create_tandatangan');
+        return view('user.kuwu.create_tandatangan');
     }
 
     public function riwayat(Request $request)
     {
-        $query = Dokumen::query()->where('id_dosen', Auth::guard('dosen')->id());
+        $query = Dokumen::query()->where('id_kuwu', Auth::guard('kuwu')->id());
 
         // Filter berdasarkan status
         if ($request->has('status') && $request->status != '') {
@@ -86,15 +86,15 @@ class DosenController extends Controller
 
         $documents = $query->orderBy('created_at', 'desc')->paginate(10);
 
-        return view('user.dosen.riwayat_dosen', compact('documents'));
+        return view('user.kuwu.riwayat_kuwu', compact('documents'));
     }
 
     public function showDokumen($id)
     {
-        $dosen_id = auth()->guard('dosen')->user()->id;
+        $dosen_id = auth()->guard('kuwu')->user()->id;
 
-        $dokumen = Dokumen::with(['ormawa', 'dosen'])
-            ->where('id_dosen', $dosen_id)
+        $dokumen = Dokumen::with(['admin', 'kuwu'])
+            ->where('id_kuwu', $dosen_id)
             ->where('id', $id)
             ->firstOrFail();
 
@@ -108,40 +108,39 @@ class DosenController extends Controller
             'keterangan_revisi' => $dokumen->keterangan_revisi,
             'keterangan_pengirim' => $dokumen->keterangan_pengirim,
             'file' => $dokumen->file,
-            'pengaju' => $dokumen->ormawa ? [
-                'nama' => $dokumen->ormawa->namaMahasiswa,
-                'ormawa' => $dokumen->ormawa->namaOrmawa,
+            'pengaju' => $dokumen->admin ? [
+                'nama' => $dokumen->admin->namaAdmin,
             ] : null,
-            'dosen' => $dokumen->dosen ? [
-                'nama' => $dokumen->dosen->nama_dosen,
+            'kuwu' => $dokumen->kuwu ? [
+                'nama' => $dokumen->kuwu->nama_kuwu,
             ] : null,
         ]);
     }
 
     public function getDokumenDetail($id)
     {
-        $dokumen = Dokumen::with(['ormawa', 'dosen'])->findOrFail($id);
+        $dokumen = Dokumen::with(['admin', 'kuwu'])->findOrFail($id);
         return response()->json($dokumen);
     }
 
     public function profile()
     {
-        $dosen = Auth::guard('dosen')->user();
-        return view('user.dosen.profile', compact('dosen'));
+        $kuwu = Auth::guard('kuwu')->user();
+        return view('user.kuwu.profile', compact('kuwu'));
     }
 
     public function editProfile()
     {
-        $dosen = Auth::guard('dosen')->user();
-        return view('user.dosen.profile', compact('dosen'));
+        $kuwu = Auth::guard('kuwu')->user();
+        return view('user.kuwu.profile', compact('kuwu'));
     }
 
     public function updateProfile(Request $request)
     {
-        $dosen = Auth::guard('dosen')->user();
+        $kuwu = Auth::guard('kuwu')->user();
 
         $request->validate([
-            'namaDosen' => 'required|string|max:255',
+            'namaKuwu' => 'required|string|max:255',
             'email' => 'required|email',
             'noHp' => 'required|string|max:15',
             'currentPassword' => 'nullable|string',
@@ -150,11 +149,11 @@ class DosenController extends Controller
         ]);
 
         // Check if email is being changed
-        $emailChanged = ($request->email !== $dosen->email);
+        $emailChanged = ($request->email !== $kuwu->email);
 
         // Update basic info
         $data = [
-            'nama_dosen' => $request->namaDosen,
+            'nama_kuwu' => $request->namaKuwu,
             'no_hp' => $request->noHp,
         ];
 
@@ -167,7 +166,7 @@ class DosenController extends Controller
         // Update password if provided
         if ($request->filled('currentPassword') && $request->filled('password')) {
             // Verify current password
-            if (!\Illuminate\Support\Facades\Hash::check($request->currentPassword, $dosen->password)) {
+            if (!\Illuminate\Support\Facades\Hash::check($request->currentPassword, $kuwu->password)) {
                 return redirect()->back()
                     ->withInput()
                     ->withErrors(['currentPassword' => 'Current password is incorrect']);
@@ -176,16 +175,16 @@ class DosenController extends Controller
             $data['password'] = \Illuminate\Support\Facades\Hash::make($request->password);
         }
 
-        $dosen->update($data);
+        $kuwu->update($data);
 
         // If email changed, redirect to verification page
         if ($emailChanged) {
-            return redirect()->route('dosen.profile')
+            return redirect()->route('kuwu.profile')
                 ->with('verify_email', true)
                 ->with('new_email', $request->email);
         }
 
-        return redirect()->route('dosen.profile')
+        return redirect()->route('kuwu.profile')
             ->with('success', 'Profile updated successfully');
     }
 
@@ -193,20 +192,20 @@ class DosenController extends Controller
     {
         // Validasi file
         $request->validate([
-            'profile_photo' => ['required', 'image', 'max:1024'], // Maksimal 1MB
+            'profile_photo' => ['required', 'image', 'max:2048'], // Maksimal 2MB
         ]);
 
         // Ambil pengguna yang sedang login
-        $dosen = Auth::guard('dosen')->user();
+        $kuwu = Auth::guard('kuwu')->user();
 
         // Periksa apakah pengguna ditemukan
-        if (!$dosen) {
+        if (!$kuwu) {
             return back()->with('error', 'Failed to update profile photo. User not found.');
         }
 
         // Hapus foto profil lama jika ada
-        if ($dosen->profile && file_exists(public_path('profiles/' . $dosen->profile))) {
-            unlink(public_path('profiles/' . $dosen->profile));
+        if ($kuwu->profile && file_exists(public_path('profiles/' . $kuwu->profile))) {
+            unlink(public_path('profiles/' . $kuwu->profile));
         }
 
         // Simpan file baru ke folder public/profiles
@@ -215,7 +214,7 @@ class DosenController extends Controller
         $file->move(public_path('profiles'), $filename);
 
         // Update database
-        $dosen->update([
+        $kuwu->update([
             'profile' => $filename,
         ]);
 
@@ -225,12 +224,12 @@ class DosenController extends Controller
 
     public function destroyPhoto()
     {
-        $dosen = Auth::guard('dosen')->user();
+        $kuwu = Auth::guard('kuwu')->user();
 
-        if ($dosen->profile) {
-            Storage::disk('public')->delete($dosen->profile);
+        if ($kuwu->profile) {
+            Storage::disk('public')->delete($kuwu->profile);
 
-            $dosen->update([
+            $kuwu->update([
                 'profile' => null
             ]);
         }
@@ -240,7 +239,7 @@ class DosenController extends Controller
 
     public function logout(Request $request)
     {
-        Auth::guard('dosen')->logout();
+        Auth::guard('kuwu')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
@@ -280,8 +279,8 @@ class DosenController extends Controller
             TandaQr::create([
                 'data_qr' => $verificationUrl,
                 'tanggal_pembuatan' => now(),
-                'id_ormawa' => $dokumen->id_ormawa,
-                'id_dosen' => auth()->guard('dosen')->id(),
+                'id_admin' => $dokumen->id_admin,
+                'id_kuwu' => auth()->guard('kuwu')->id(),
                 'id_dokumen' => $dokumen->id
             ]);
 
@@ -401,7 +400,7 @@ class DosenController extends Controller
     public function verifyDocument($id)
     {
         try {
-            $dokumen = Dokumen::with(['dosen', 'ormawa', 'kemahasiswaan'])->findOrFail($id);
+            $dokumen = Dokumen::with(['kuwu', 'admin', 'kemahasiswaan'])->findOrFail($id);
 
             if (!$dokumen->is_signed || !$dokumen->kode_pengesahan) {
                 return view('verify.document', [
@@ -429,7 +428,7 @@ class DosenController extends Controller
         try {
             $dokumen = Dokumen::findOrFail($id);
 
-            if ($dokumen->id_dosen != auth()->guard('dosen')->id()) {
+            if ($dokumen->id_kuwu != auth()->guard('kuwu')->id()) {
                 abort(403, 'Unauthorized action.');
             }
 
@@ -463,7 +462,7 @@ class DosenController extends Controller
                 ]);
             }
 
-            return view('user.dosen.edit_qr', compact('dokumen'));
+            return view('user.kuwu.edit_qr', compact('dokumen'));
 
         } catch (\Exception $e) {
             Log::error('Error in editQrCode: ' . $e->getMessage());
@@ -472,331 +471,13 @@ class DosenController extends Controller
     }
 
 
-    public function getVerificationStatus()
-    {
-        $dosen = Auth::guard('dosen')->user();
-
-        return response()->json([
-            'is_verified' => $dosen->is_email_verified,
-            'email' => $dosen->email,
-            'verification_in_progress' => !empty($dosen->verification_email),
-            'verification_email' => $dosen->verification_email,
-        ]);
-    }
-
-    // Generate OTP and send to email
-    public function sendEmailOTP(Request $request)
-    {
-        try {
-            Log::info('Received send OTP request', $request->all());
-
-            $request->validate([
-                'email' => 'required|email'
-            ]);
-
-            $dosen = Auth::guard('dosen')->user();
-            Log::info('User authenticated', ['user_id' => $dosen->id]);
-
-            // Check if the email is already verified
-            if ($dosen->is_email_verified && $dosen->email === $request->email) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'This email is already verified.'
-                ]);
-            }
-
-            // Generate 6-digit OTP
-            $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-
-            // Store OTP and set expiration time (15 minutes)
-            $dosen->verification_email = $request->email;
-            $dosen->email_verification_code = $otp;
-            $dosen->email_verification_expires_at = Carbon::now()->addMinutes(15);
-            $saved = $dosen->save();
-
-            if (!$saved) {
-                Log::error('Failed to save OTP data to database');
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to save verification data. Please try again.'
-                ], 500);
-            }
-
-            Log::info('OTP generated and saved', [
-                'user_id' => $dosen->id,
-                'verification_email' => $dosen->verification_email,
-                'otp' => $otp, // Don't log OTP in production!
-                'expires_at' => $dosen->email_verification_expires_at
-            ]);
-
-            // Send email with OTP
-            try {
-                $this->sendOTPEmail($dosen->verification_email, $otp, $dosen->nama_dosen);
-                Log::info('OTP email sent successfully');
-
-                // For development, include OTP in response
-                if (config('app.debug')) {
-                    return response()->json([
-                        'success' => true,
-                        'message' => 'OTP sent to your email. Please check your inbox.',
-                        'debug_otp' => $otp
-                    ]);
-                }
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'OTP sent to your email. Please check your inbox.'
-                ]);
-            } catch (\Exception $e) {
-                Log::error('Failed to send OTP email: ' . $e->getMessage(), [
-                    'exception' => get_class($e),
-                    'line' => $e->getLine(),
-                    'file' => $e->getFile()
-                ]);
-
-                // For development, return success with OTP even if email fails
-                if (config('app.debug')) {
-                    return response()->json([
-                        'success' => true,
-                        'message' => 'Email sending failed but OTP generated. For debugging: ' . $otp,
-                        'debug_otp' => $otp
-                    ]);
-                }
-
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to send email. Please try again.'
-                ], 500);
-            }
-        } catch (\Exception $e) {
-            Log::error('Failed to send OTP: ' . $e->getMessage(), [
-                'exception' => get_class($e),
-                'line' => $e->getLine(),
-                'file' => $e->getFile(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            if (config('app.debug')) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to send OTP: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to send OTP. Please try again.'
-            ], 500);
-        }
-    }
-
-    // Verify the OTP
-    public function verifyEmailOTP(Request $request)
-    {
-        try {
-            $request->validate([
-                'otp' => 'required|numeric|digits:6'
-            ]);
-
-            $dosen = Auth::guard('dosen')->user();
-
-            // Check if OTP is expired
-            if (Carbon::now()->isAfter($dosen->email_verification_expires_at)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'OTP has expired. Please request a new one.'
-                ]);
-            }
-
-            // Verify OTP
-            if ($request->otp != $dosen->email_verification_code) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid OTP. Please try again.'
-                ]);
-            }
-
-            // Update email and verification status
-            $dosen->email = $dosen->verification_email;
-            $dosen->is_email_verified = true;
-            $dosen->email_verified_at = Carbon::now();
-            $dosen->email_verification_code = null;
-            $dosen->verification_email = null;
-            $dosen->save();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Email verified successfully!'
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Failed to verify OTP: ' . $e->getMessage());
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to verify OTP. Please try again.'
-            ], 500);
-        }
-    }
-
-    // Resend OTP
-    public function resendOTP()
-    {
-        try {
-            Log::info('Received resend OTP request');
-
-            $dosen = Auth::guard('dosen')->user();
-            Log::info('User authenticated', ['user_id' => $dosen->id]);
-
-            if (!$dosen->verification_email) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No email verification in progress.'
-                ]);
-            }
-
-            // Generate new OTP
-            $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-
-            // Update OTP and expiration time
-            $dosen->email_verification_code = $otp;
-            $dosen->email_verification_expires_at = Carbon::now()->addMinutes(15);
-            $saved = $dosen->save();
-
-            if (!$saved) {
-                Log::error('Failed to save new OTP data');
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to generate new OTP. Please try again.'
-                ], 500);
-            }
-
-            Log::info('New OTP generated for resend', [
-                'user_id' => $dosen->id,
-                'verification_email' => $dosen->verification_email,
-                'otp' => $otp, // Don't log OTP in production!
-                'expires_at' => $dosen->email_verification_expires_at
-            ]);
-
-            // Send email with new OTP
-            try {
-                $this->sendOTPEmail($dosen->verification_email, $otp, $dosen->nama_dosen);
-                Log::info('Resend OTP email sent successfully');
-
-                // For development, include OTP in response
-                if (config('app.debug')) {
-                    return response()->json([
-                        'success' => true,
-                        'message' => 'New OTP sent to your email. Please check your inbox.',
-                        'debug_otp' => $otp
-                    ]);
-                }
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'New OTP sent to your email. Please check your inbox.'
-                ]);
-            } catch (\Exception $e) {
-                Log::error('Failed to send resend OTP email: ' . $e->getMessage(), [
-                    'exception' => get_class($e),
-                    'line' => $e->getLine(),
-                    'file' => $e->getFile()
-                ]);
-
-                // For development, return success with OTP even if email fails
-                if (config('app.debug')) {
-                    return response()->json([
-                        'success' => true,
-                        'message' => 'Email sending failed but OTP generated. For debugging: ' . $otp,
-                        'debug_otp' => $otp
-                    ]);
-                }
-
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to send email. Please try again.'
-                ], 500);
-            }
-        } catch (\Exception $e) {
-            Log::error('Failed to resend OTP: ' . $e->getMessage(), [
-                'exception' => get_class($e),
-                'line' => $e->getLine(),
-                'file' => $e->getFile(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            if (config('app.debug')) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to resend OTP: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to resend OTP. Please try again.'
-            ], 500);
-        }
-    }
-
-    // Show email verification modal
-    public function showEmailVerification(Request $request)
-    {
-        $request->validate([
-            'email' => 'required|email'
-        ]);
-
-        $email = $request->input('email');
-
-        // Simpan email baru di session untuk ditampilkan di modal
-        session(['verify_email' => true, 'new_email' => $email]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Verification modal is ready'
-        ]);
-    }
-
-    // Helper function to send OTP email
-    private function sendOTPEmail($email, $otp, $name)
-    {
-        try {
-            Log::info('Preparing to send OTP email', ['email' => $email]);
-
-            $data = [
-                'otp' => $otp,
-                'name' => $name
-            ];
-
-            Mail::send('emails.otp-verification', $data, function($message) use($email) {
-                $message->to($email)
-                        ->subject('Email Verification Code - Sistem Dokumen Digital');
-            });
-
-            // Check if there were any failures
-            if (Mail::failures()) {
-                Log::error('Failed to send email to: ' . $email, ['failures' => Mail::failures()]);
-                throw new \Exception('Failed to send email: ' . implode(', ', Mail::failures()));
-            }
-
-            Log::info('Email sent successfully to: ' . $email);
-            return true;
-        } catch (\Exception $e) {
-            Log::error('Error sending email: ' . $e->getMessage(), [
-                'exception' => get_class($e),
-                'line' => $e->getLine(),
-                'file' => $e->getFile()
-            ]);
-            throw $e;
-        }
-    }
-
     public function approveDokumen($id)
     {
         try {
             $dokumen = Dokumen::findOrFail($id);
 
-            // Pastikan dokumen milik dosen yang sedang login
-            if ($dokumen->id_dosen != auth()->guard('dosen')->id()) {
+            // Pastikan dokumen milik kuwu yang sedang login
+            if ($dokumen->id_kuwu != auth()->guard('kuwu')->id()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized action'
@@ -811,7 +492,7 @@ class DosenController extends Controller
 
             // Create activity log if you have it
             // ActivityLog::create([
-            //     'user_id' => auth()->guard('dosen')->id(),
+            //     'user_id' => auth()->guard('kuwu')->id(),
             //     'action' => 'approve',
             //     'dokumen_id' => $dokumen->id,
             //     'description' => 'Dokumen telah disetujui'

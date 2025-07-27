@@ -6,8 +6,8 @@
         <button class="relative">
             <i class="ti ti-bell text-xl text-gray-500"></i>
         </button>
-        @if(Auth::guard('dosen')->user()->photo)
-            <img src="{{ asset('storage/' . Auth::guard('dosen')->user()->photo) }}"
+        @if(Auth::guard('kuwu')->user()->photo)
+            <img src="{{ asset('storage/' . Auth::guard('kuwu')->user()->photo) }}"
                  alt="Profile Photo"
                  class="w-10 h-10 rounded-full object-cover">
         @else
@@ -16,7 +16,7 @@
             </div>
         @endif
         <div class="text-right">
-            <p class="text-sm font-semibold text-gray-800">{{ Auth::guard('dosen')->user()->nama_dosen }}</p>
+            <p class="text-sm font-semibold text-gray-800">{{ Auth::guard('kuwu')->user()->nama_kuwu }}</p>
             <p class="text-xs text-gray-500">Kuwu</p>
         </div>
         <i class="ti ti-chevron-down text-gray-500"></i>

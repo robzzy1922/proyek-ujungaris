@@ -40,18 +40,11 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
-        'dosen' => [
+        'kuwu' => [
             'driver' => 'session',
-            'provider' => 'dosen',
+            'provider' => 'kuwu',
         ],
-        'kemahasiswaan' => [
-            'driver' => 'session',
-            'provider' => 'kemahasiswaan',
-        ],
-        'ormawa' => [
-            'driver' => 'session',
-            'provider' => 'ormawa',
-        ],
+
         'admin' => [
             'driver' => 'session',
             'provider' => 'admin',
@@ -80,17 +73,9 @@ return [
             'driver' => 'eloquent',
             'model' => App\Models\User::class,
         ],
-        'dosen' => [
+        'kuwu' => [
             'driver' => 'eloquent',
-            'model' => App\Models\Dosen::class,
-        ],
-        'kemahasiswaan' => [
-            'driver' => 'eloquent',
-            'model' => App\Models\Kemahasiswaan::class,
-        ],
-        'ormawa' => [
-            'driver' => 'eloquent',
-            'model' => App\Models\Ormawas::class,
+            'model' => App\Models\Kuwu::class,
         ],
         'admin' => [
             'driver' => 'eloquent',

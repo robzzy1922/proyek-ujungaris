@@ -11,9 +11,12 @@ class AdminSeeder extends Seeder
     public function run()
     {
         Admin::create([
-            'name' => 'SIGNIX ATMIN',
-            'email' => 'robi@atmin.com',
-            'password' => Hash::make('password'),
+            'namaAdmin' => 'Robi Permana',
+            'nip' => '12345',
+            'email' => 'Robipermana@gmail.com',
+            'noHp' => '081234567890',
+            'password' => Hash::make('12345'),
+            'profile' => null
         ]);
     }
 }

@@ -7,17 +7,17 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
-class Dosen extends Authenticatable
+class Kuwu extends Authenticatable
 {
     use Notifiable;
     use HasFactory;
     use HasApiTokens;
 
-    protected $table = 'dosen';
-    protected $guard = 'dosen';
+    protected $table = 'kuwu';
+    protected $guard = 'kuwu';
 
     protected $fillable = [
-        'nama_dosen',
+        'nama_kuwu',
         'nip',
         'email',
         'password',

@@ -1,5 +1,5 @@
-@extends('layouts.dosen')
-@section('title', 'Profil Dosen')
+@extends('layouts.app_admin')
+@section('title', 'Profil Admin')
 @section('content')
     <div class="container px-4 py-8 mx-auto">
         <!-- Alert Component -->
@@ -61,18 +61,18 @@
             <div class="p-8 bg-gray-50 border-b">
                 <div class="flex justify-center items-center space-x-6">
                     <div class="flex relative flex-col items-center">
-                        @if($dosen->profile)
-                            <img src="{{ asset('profiles/' . Auth::guard('dosen')->user()->profile) }}"
-                                 alt="Profile Photo"
-                                 class="object-cover w-40 h-40 rounded-full border-4 border-white shadow-lg">
+                        @if($admin->profile)
+                        <img src="{{ asset('storage/' . $admin->profile) }}"
+                        alt="Profile Picture"
+                        class="object-cover w-20 h-20 rounded-full">
                         @else
                             <div class="flex justify-center items-center w-40 h-40 bg-gradient-to-r from-blue-400 to-blue-500 rounded-full border-4 border-white shadow-lg">
-                                <span class="text-5xl font-semibold text-white">{{ substr($dosen->nama_dosen, 0, 1) }}</span>
+                                <span class="text-5xl font-semibold text-white">{{ substr($admin->namaMahasiswa, 0, 1) }}</span>
                             </div>
                         @endif
 
                         <div class="flex mt-6 space-x-3">
-                            <form action="{{ route('dosen.profile.photo.update') }}" method="POST" enctype="multipart/form-data" id="photoForm" class="inline">
+                            <form action="{{ route('admin.profile.photo.update') }}" method="POST" enctype="multipart/form-data" id="photoForm" class="inline">
                                 @csrf
                                 <input type="file" name="profile_photo" id="profile_photo" class="hidden" accept="image/*" onchange="this.form.submit()">
                                 <label for="profile_photo" class="inline-block px-4 py-2 text-sm font-medium text-white bg-blue-400 rounded-lg shadow-md transition duration-200 cursor-pointer hover:bg-blue-500">
@@ -80,8 +80,8 @@
                                 </label>
                             </form>
 
-                            @if($dosen->profile)
-                                <form action="{{ route('dosen.profile.photo.destroy') }}" method="POST" class="inline">
+                            @if($admin->profile)
+                                <form action="{{ route('admin.profile.photo.destroy') }}" method="POST" class="inline">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="inline-block px-4 py-2 text-sm font-medium text-red-600 bg-white rounded-lg border border-red-200 shadow-md transition duration-200 hover:bg-red-50">
@@ -95,15 +95,15 @@
             </div>
 
             <!-- Profile Information Form -->
-            <form action="{{ route('dosen.profile.update') }}" method="POST" class="p-8">
+            <form action="{{ route('admin.profile.update') }}" method="POST" class="p-8">
                 @csrf
                 @method('PUT')
 
                 <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                     <div class="space-y-2">
-                        <label for="namaDosen" class="block text-sm font-semibold text-gray-700">Name</label>
-                        <input type="text" name="namaDosen" id="namaDosen"
-                               value="{{ old('namaDosen', $dosen->nama_dosen) }}"
+                        <label for="namaMahasiswa" class="block text-sm font-semibold text-gray-700">Name</label>
+                        <input type="text" name="namaMahasiswa" id="namaMahasiswa"
+                               value="{{ old('namaMahasiswa', $admin->namaMahasiswa) }}"
                                class="block px-4 py-3 w-full rounded-lg border border-gray-300 shadow-sm transition duration-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
                     </div>
 
@@ -111,7 +111,7 @@
                         <label for="email" class="block text-sm font-semibold text-gray-700">Email</label>
                         <div class="relative">
                             <input type="email" name="email" id="email"
-                                   value="{{ old('email', $dosen->email) }}"
+                                   value="{{ old('email', $admin->email) }}"
                                    class="block px-4 py-3 pr-12 w-full rounded-lg border border-gray-300 shadow-sm transition duration-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
                             <div class="flex absolute inset-y-0 right-0 items-center pr-3">
                                 <span id="emailStatus" class="text-xs font-medium"></span>
@@ -123,7 +123,7 @@
                     <div class="space-y-2">
                         <label for="noHp" class="block text-sm font-semibold text-gray-700">Phone Number</label>
                         <input type="text" name="noHp" id="noHp"
-                               value="{{ old('noHp', $dosen->no_hp) }}"
+                               value="{{ old('noHp', $admin->noHp) }}"
                                class="block px-4 py-3 w-full rounded-lg border border-gray-300 shadow-sm transition duration-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
                     </div>
                 </div>
@@ -251,7 +251,7 @@
 
         // Update email verification status indicator
         function updateEmailVerificationStatus() {
-            fetch('{{ route('dosen.email.verification.status') }}')
+            fetch('{{ route('admin.email.verification.status') }}')
                 .then(response => response.json())
                 .then(data => {
                     const statusEl = document.getElementById('emailStatus');
@@ -297,11 +297,11 @@
             const emailInput = document.getElementById('email');
             emailInput.addEventListener('change', function() {
                 const newEmail = this.value;
-                if (newEmail && newEmail !== '{{ $dosen->email }}') {
+                if (newEmail && newEmail !== '{{ $admin->email }}') {
                     const formData = new FormData();
                     formData.append('email', newEmail);
 
-                    fetch('{{ route('dosen.email.show.verification') }}', {
+                    fetch('{{ route('admin.email.show.verification') }}', {
                         method: 'POST',
                         headers: {
                             'X-CSRF-TOKEN': '{{ csrf_token() }}'
@@ -349,21 +349,15 @@
                 const formData = new FormData();
                 formData.append('email', email);
 
-                console.log('Sending OTP to:', email);
-
-                fetch('{{ route('dosen.email.send.otp') }}', {
+                fetch('{{ route('admin.email.send.otp') }}', {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': '{{ csrf_token() }}'
                     },
                     body: formData
                 })
-                .then(response => {
-                    console.log('Response status:', response.status);
-                    return response.json();
-                })
+                .then(response => response.json())
                 .then(data => {
-                    console.log('Response data:', data);
                     if (data.success) {
                         step1.classList.add('hidden');
                         step2.classList.remove('hidden');
@@ -374,7 +368,7 @@
                     }
                 })
                 .catch(error => {
-                    console.error('Error sending OTP:', error);
+                    console.error('Error:', error);
                     showAlert('Failed to send OTP. Please try again.', 'error');
                 });
             });
@@ -391,7 +385,7 @@
                 const formData = new FormData();
                 formData.append('otp', otp);
 
-                fetch('{{ route('dosen.email.verify.otp') }}', {
+                fetch('{{ route('admin.email.verify.otp') }}', {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': '{{ csrf_token() }}'
@@ -402,7 +396,7 @@
                 .then(data => {
                     if (data.success) {
                         showAlert(data.message);
-                        modal.classList.add('hidden');
+                        verificationModal.classList.add('hidden');
                         clearInterval(countdownInterval);
                         setTimeout(() => {
                             window.location.reload();
@@ -421,11 +415,11 @@
             resendOtpBtn.addEventListener('click', function() {
                 console.log('Attempting to resend OTP');
 
-                fetch('{{ route('dosen.email.resend.otp') }}', {
+                fetch('{{ route('admin.email.resend.otp') }}', {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    }
+                    },
                 })
                 .then(response => {
                     console.log('Response status:', response.status);

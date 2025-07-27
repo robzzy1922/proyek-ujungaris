@@ -4,10 +4,10 @@ namespace Database\Seeders;
 
 
 use Illuminate\Database\Seeder;
-use App\Models\Dosen;
+use App\Models\Kuwu;
 use Illuminate\Support\Facades\Hash;
 
-class DosenSeeder extends Seeder
+class KuwuSeeder extends Seeder
 {
     /**
      * Run the database seeds.
@@ -16,17 +16,16 @@ class DosenSeeder extends Seeder
     {
         $data = [
             [
-                'nama_dosen' => 'Kuwu 1',
+                'nama_kuwu' => 'Tegar Wira Kesuma',
                 'nip' => '12345',
-                'email' => 'dosen1@example.com',
+                'email' => 'kuwu1@example.com',
                 'password' => Hash::make('12345'),
                 'no_hp' => '081234567890',
-                'prodi' => 'Teknik Informatika',
             ],
         ];
 
-        foreach ($data as $dosen) {
-            Dosen::firstOrCreate(['nip' => $dosen['nip']], $dosen);
+        foreach ($data as $kuwu) {
+            Kuwu::firstOrCreate(['nip' => $kuwu['nip']], $kuwu);
         }
     }
 }

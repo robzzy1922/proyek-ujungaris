@@ -39,8 +39,8 @@
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             onchange="toggleInputField()">
                         <option value="">Pilih Role</option>
-                        <option value="ormawa">Admin</option>
-                        <option value="dosen">Kuwu</option>
+                        <option value="admin">Admin</option>
+                        <option value="kuwu">Kuwu</option>
                     </select>
                 </div>
 
@@ -49,22 +49,6 @@
                     <p class="text-red-600 text-sm">{{ $errors->first('login') }}</p>
                 </div>
                 @endif
-
-                <!-- Email Field (Hidden by default) -->
-                <div id="emailField" class="hidden mb-4">
-                    <label for="email" class="block text-gray-700 text-sm font-medium mb-2">Email</label>
-                    <input type="email" name="email" id="email"
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                           placeholder="Masukkan email">
-                </div>
-
-                <!-- NIM Field -->
-                <div id="nimField" class="mb-4 hidden">
-                    <label for="nim" class="block text-gray-700 text-sm font-medium mb-2">NIM</label>
-                    <input type="text" name="nim" id="nim" value="{{ old('nim') }}"
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                           placeholder="Masukkan NIM">
-                </div>
 
                 <!-- NIP Field -->
                 <div id="nipField" class="mb-4 hidden">
@@ -153,8 +137,6 @@
             var role = document.getElementById('role').value;
 
             // Hide all fields first
-            document.getElementById('emailField').classList.add('hidden');
-            document.getElementById('nimField').classList.add('hidden');
             document.getElementById('nipField').classList.add('hidden');
             document.getElementById('passwordField').classList.add('hidden');
             document.getElementById('submitButton').classList.add('hidden');
@@ -162,16 +144,12 @@
 
             if (role) {
                 // Show appropriate fields based on role
-                if (role === 'ormawa') {
-                    document.getElementById('nimField').classList.remove('hidden');
-                } else if (role === 'dosen' || role === 'kemahasiswaan') {
+                if (role === 'admin' || role === 'kuwu') {
                     document.getElementById('nipField').classList.remove('hidden');
+                    document.getElementById('passwordField').classList.remove('hidden');
+                    document.getElementById('submitButton').classList.remove('hidden');
+                    document.getElementById('forgotPasswordLink').classList.remove('hidden');
                 }
-
-                // Always show password, submit button, and forgot password link when role is selected
-                document.getElementById('passwordField').classList.remove('hidden');
-                document.getElementById('submitButton').classList.remove('hidden');
-                document.getElementById('forgotPasswordLink').classList.remove('hidden');
             }
         }
 

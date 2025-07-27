@@ -1,11 +1,11 @@
 @extends('layouts.app_kuwu')
-@section('title', 'Dashboard Dosen')
+@section('title', 'Dashboard Kuwu')
 @section('content')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <div class="container px-4 py-8 mx-auto">
     <div class="grid grid-cols-1 gap-4 mb-8 md:grid-cols-2 lg:grid-cols-4">
         <!-- Surat yang diajukan -->
-        <a href="{{ route('dosen.riwayat', ['status' => 'diajukan']) }}"
+        <a href="{{ route('kuwu.riwayat', ['status' => 'diajukan']) }}"
             class="block transition-all transform hover:scale-105">
             <div class="p-6 shadow-lg bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-xl">
                 <div class="flex flex-col space-y-3">
@@ -18,7 +18,7 @@
                             <div class="p-3 mb-3 bg-yellow-300 rounded-full bg-opacity-30">
                                 <i class="text-3xl text-white fas fa-file-alt"></i>
                             </div>
-                            <h2 class="text-lg font-semibold text-white">Dokumen Diajukan Ormawa</h2>
+                            <h2 class="text-lg font-semibold text-white">Dokumen Diajukan Admin</h2>
                         </div>
                         <span class="text-5xl font-bold text-white">{{ $countDiajukan }}</span>
                     </div>
@@ -29,7 +29,7 @@
             </div>
         </a>
         <!-- Surat sudah tertanda -->
-        <a href="{{ route('dosen.riwayat', ['status' => 'disahkan']) }}"
+        <a href="{{ route('kuwu.riwayat', ['status' => 'disahkan']) }}"
             class="block transition-all transform hover:scale-105">
             <div class="shadow-lg p-9 bg-gradient-to-br from-green-400 to-green-500 rounded-xl">
                 <div class="flex flex-col space-y-3">
@@ -54,7 +54,7 @@
         </a>
 
         <!-- Surat perlu direvisi -->
-        <a href="{{ route('dosen.riwayat', ['status' => 'butuh_revisi']) }}"
+        <a href="{{ route('kuwu.riwayat', ['status' => 'butuh_revisi']) }}"
             class="block transition-all transform hover:scale-105">
             <div class="shadow-lg p-9 bg-gradient-to-br from-red-400 to-red-500 rounded-xl">
                 <div class="flex flex-col space-y-3">
@@ -83,7 +83,7 @@
     <!-- Search and Filter Section -->
     <div class="flex flex-col items-center justify-between mb-8 space-y-4 md:flex-row md:space-y-0">
         <div class="w-full md:w-64">
-            <form method="GET" action="{{ route('dosen.dashboard') }}" class="flex">
+            <form method="GET" action="{{ route('kuwu.dashboard') }}" class="flex">
                 <div class="relative flex-grow">
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari Surat"
                         class="w-full py-2 pl-10 pr-4 border rounded-l-lg">
@@ -95,15 +95,13 @@
             </form>
         </div>
         <div>
-            <form method="GET" action="{{ route('dosen.dashboard') }}">
+            <form method="GET" action="{{ route('kuwu.dashboard') }}">
                 <select name="status" class="px-4 py-2 border rounded-lg" onchange="this.form.submit()">
                     <option value="">Semua Status</option>
                     <option value="diajukan" {{ request('status')=='diajukan' ? 'selected' : '' }}>Diajukan</option>
                     <option value="disahkan" {{ request('status')=='disahkan' ? 'selected' : '' }}>Tertanda</option>
-                    <option value="butuh revisi" {{ request('status')=='butuh revisi' ? 'selected' : '' }}>Perlu
-                        direvisi</option>
-                    <option value="sudah direvisi" {{ request('status')=='sudah direvisi' ? 'selected' : '' }}>Sudah
-                        direvisi</option>
+                    <option value="disetujui" {{ request('status')=='disetujui' ? 'selected' : '' }}>Disetujui</option>
+
                 </select>
             </form>
         </div>
@@ -138,7 +136,7 @@
                 <tr data-id="{{ $dokumen->id }}">
                     <td class="px-6 py-4 whitespace-nowrap" data-nomor>{{ $dokumen->nomor_surat }}</td>
                     <td class="px-6 py-4 whitespace-nowrap" data-tanggal>{{ $dokumen->tanggal_pengajuan }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap" data-namaPengirim>{{ $dokumen->ormawa->namaMahasiswa }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap" data-namaPengirim>{{ $dokumen->admin->namaAdmin }}</td>
                     <td class="px-6 py-4 whitespace-nowrap" data-perihal>{{ $dokumen->nama_pemohon }}</td>
 
                     <td class="px-6 py-4 whitespace-nowrap" data-status>
@@ -266,7 +264,7 @@
         currentFileUrl = pdfUrl;
 
         // Fetch document details
-        fetch(`/dosen/dokumen/${documentId}`)
+        fetch(`/kuwu/dokumen/${documentId}`)
             .then(response => response.json())
             .then(data => {
                 document.getElementById('modalContent').innerHTML = `
@@ -283,30 +281,14 @@
                             <p class="mt-1">${data.tanggal_pengajuan}</p>
                         </div>
                         <div>
-                            <p class="text-sm font-medium text-gray-500">Perihal</p>
-                            <p class="mt-1">${data.perihal}</p>
+                            <p class="text-sm font-medium text-gray-500">Nama Pemohon</p>
+                            <p class="mt-1">${data.nama_pemohon}</p>
                         </div>
                         <div>
                             <p class="text-sm font-medium text-gray-500">Status</p>
                             <p class="mt-1">${data.status_dokumen}</p>
                         </div>
-                        <div>
-                            <p class="text-sm font-medium text-gray-500">Keterangan</p>
-                            <p class="mt-1">${data.keterangan || '-'}</p>
-                        </div>
-                        ${data.keterangan_revisi ? `
-                        <div>
-                            <p class="text-sm font-medium text-gray-500">Keterangan Revisi</p>
-                            <p class="mt-1 text-red-600">${data.keterangan_revisi}</p>
-                        </div>
-                        ` : ''}
-                        ${data.keterangan_pengirim && data.status_dokumen.toLowerCase() === 'sudah direvisi' ? `
-                        <div>
-                            <p class="text-sm font-medium text-gray-500">Keterangan Dari Ormawa</p>
-                            <p class="mt-1 text-blue-600">${data.keterangan_pengirim}</p>
-                        </div>
-                        ` : ''}
-                    </div>
+
                 `;
 
                 // Get all action buttons
@@ -382,7 +364,7 @@
         button.innerHTML = 'Generating...';
         button.disabled = true;
 
-        fetch(`/dosen/dokumen/${documentId}/generate-qr`, {
+        fetch(`/kuwu/dokumen/${documentId}/generate-qr`, {
             method: 'GET',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
@@ -499,7 +481,7 @@
             height: parseFloat(qrElement.style.height)
         };
 
-        fetch(`/dosen/dokumen/${currentDocumentId}/save-qr-position`, {
+        fetch(`/kuwu/dokumen/${currentDocumentId}/save-qr-position`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -531,7 +513,7 @@
         if (!currentDocumentId) return;
 
         // Generate QR Code first
-        fetch(`/dosen/dokumen/${currentDocumentId}/generate-qr`, {
+        fetch(`/kuwu/dokumen/${currentDocumentId}/generate-qr`, {
             method: 'GET',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
@@ -542,7 +524,7 @@
         .then(data => {
             if (data.success) {
                 // Redirect to QR editor page
-                window.location.href = `/dosen/dokumen/${currentDocumentId}/edit-qr`;
+                window.location.href = `/kuwu/dokumen/${currentDocumentId}/edit-qr`;
             } else {
                 alert(data.message || 'Gagal membuat QR Code');
             }
@@ -567,7 +549,7 @@
             cancelButtonText: 'Batal'
         }).then((result) => {
             if (result.isConfirmed) {
-                fetch(`/dosen/dokumen/${currentDocumentId}/approve`, {
+                fetch(`/kuwu/dokumen/${currentDocumentId}/approve`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

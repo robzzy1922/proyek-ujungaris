@@ -6,7 +6,7 @@
 
     <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-4">
         <div class="w-full md:w-64">
-            <form method="GET" action="{{ route('ormawa.riwayat') }}" class="flex">
+            <form method="GET" action="{{ route('admin.riwayat') }}" class="flex">
                 <div class="relative flex-grow">
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari Pengajuan"
                         class="py-2 pr-4 pl-10 w-full rounded-l-lg border text-sm">
@@ -22,7 +22,7 @@
             </form>
         </div>
         <div class="w-full md:w-auto">
-            <form method="GET" action="{{ route('ormawa.riwayat') }}">
+            <form method="GET" action="{{ route('admin.riwayat') }}">
                 <select name="status" class="w-full md:w-auto px-4 py-2 rounded-lg border text-sm"
                     onchange="this.form.submit()">
                     <option value="">Semua Status</option>
@@ -173,7 +173,7 @@ function showModal(documentId) {
     modal.classList.remove('hidden');
 
     // Fetch document details
-    fetch(`/ormawa/dokumen/${documentId}`, {
+    fetch(`/admin/dokumen/${documentId}`, {
         headers: {
             'Accept': 'application/json',
             'X-Requested-With': 'XMLHttpRequest'
@@ -207,8 +207,8 @@ function showModal(documentId) {
                                 <dd>${data.tanggal_pengajuan}</dd>
                             </div>
                             <div class="flex justify-between">
-                                <dt class="font-medium text-gray-600">Perihal:</dt>
-                                <dd>${data.perihal}</dd>
+                                <dt class="font-medium text-gray-600">Nama Pemohon:</dt>
+                                <dd>${data.nama_pemohon}</dd>
                             </div>
                             <div class="flex justify-between">
                                 <dt class="font-medium text-gray-600">Status:</dt>
@@ -218,24 +218,12 @@ function showModal(documentId) {
                                     </span>
                                 </dd>
                             </div>
-                            ${data.keterangan_revisi ? `
-                            <div class="flex justify-between">
-                                <dt class="font-medium text-gray-600">Keterangan Revisi:</dt>
-                                <dd class="text-red-600">${data.keterangan_revisi}</dd>
-                            </div>
-                            ` : ''}
-                            ${data.tujuan ? `
-                            <div class="flex justify-between">
-                                <dt class="font-medium text-gray-600">Tujuan:</dt>
-                                <dd>${data.tujuan.nama}</dd>
-                            </div>
-                            ` : ''}
                         </dl>
                     </div>
 
                     <div class="flex flex-col space-y-2">
                         ${data.status_dokumen.toLowerCase() === 'disahkan' ? `
-                            <a href="/ormawa/dokumen/${documentId}/download"
+                            <a href="/admin/dokumen/${documentId}/download"
                                class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -243,7 +231,7 @@ function showModal(documentId) {
                                 Download Dokumen
                             </a>
                         ` : ''}
-                        <a href="/ormawa/dokumen/${documentId}/view"
+                        <a href="/admin/dokumen/${documentId}/view"
                            target="_blank"
                            class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -255,7 +243,7 @@ function showModal(documentId) {
                     </div>
                 </div>
                 <div class="h-[600px] border rounded-lg overflow-hidden">
-                    <iframe src="/ormawa/dokumen/${documentId}/view" class="w-full h-full" frameborder="0"></iframe>
+                    <iframe src="/admin/dokumen/${documentId}/view" class="w-full h-full" frameborder="0"></iframe>
                 </div>
             </div>
         `;

@@ -1,4 +1,4 @@
-@extends('layouts.dosen')
+@extends('layouts.app_kuwu')
 @section('title', 'Edit QR Code Position')
 @section('content')
 
@@ -118,7 +118,7 @@
         <nav class="flex mb-4" aria-label="Breadcrumb">
             <ol class="inline-flex items-center space-x-1 md:space-x-3">
                 <li class="inline-flex items-center">
-                    <a href="{{ route('dosen.dashboard') }}" class="inline-flex items-center text-gray-700 hover:text-blue-600">
+                    <a href="{{ route('kuwu.dashboard') }}" class="inline-flex items-center text-gray-700 hover:text-blue-600">
                         <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                             <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
                         </svg>
@@ -188,7 +188,7 @@
                     class="px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600">
                 Simpan Posisi
             </button>
-            <a href="{{ route('dosen.dashboard') }}"
+            <a href="{{ route('kuwu.dashboard') }}"
                class="px-4 py-2 text-gray-700 bg-gray-200 rounded hover:bg-gray-300">
                 Batal
             </a>
@@ -196,7 +196,7 @@
     @else
         <div class="text-center py-8">
             <p class="text-red-500">Dokumen tidak ditemukan.</p>
-            <a href="{{ route('dosen.dashboard') }}" class="mt-4 inline-block px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+            <a href="{{ route('kuwu.dashboard') }}" class="mt-4 inline-block px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
                 Kembali ke Dashboard
             </a>
         </div>
@@ -398,7 +398,7 @@
         // Log position data for debugging
         console.log('Saving position:', position);
 
-        fetch(`/dosen/dokumen/${dokumenId}/save-qr-position`, {
+        fetch(`/kuwu/dokumen/${dokumenId}/save-qr-position`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -410,7 +410,7 @@
         .then(data => {
             if (data.success) {
                 alert('Posisi QR code berhasil disimpan');
-                window.location.href = '{{ route("dosen.dashboard") }}';
+                window.location.href = '{{ route("kuwu.dashboard") }}';
             } else {
                 alert(data.message || 'Gagal menyimpan posisi QR code');
             }

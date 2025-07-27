@@ -6,11 +6,11 @@ use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-class OrmawaMiddleware
+class AdminMiddleware
 {
     public function handle(Request $request, Closure $next)
     {
-        if (!Auth::guard('ormawa')->check()) {
+        if (!Auth::guard('admin')->check()) {
             return redirect()->route('login');
         }
 

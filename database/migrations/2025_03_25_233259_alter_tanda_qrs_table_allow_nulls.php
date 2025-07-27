@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('tanda_qrs', function (Blueprint $table) {
-            $table->unsignedBigInteger('id_dosen')->nullable()->change();
-            $table->unsignedBigInteger('id_kemahasiswaan')->nullable()->change();
+            $table->unsignedBigInteger('id_kuwu')->nullable()->change();
+
         });
     }
 

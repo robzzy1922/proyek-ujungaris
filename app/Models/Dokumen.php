@@ -4,8 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use App\Models\Ormawas;
-use App\Models\Dosen;
+use App\Models\Admin;
+use App\Models\Kuwu;
 use App\Models\Kemahasiswaan;
 
 class Dokumen extends Model
@@ -16,7 +16,7 @@ class Dokumen extends Model
     protected $fillable = [
         'file',
         'nomor_surat',
-        'perihal',
+        'nama_pemohon',
         'qr_position_x',
         'qr_position_y',
         'qr_width',
@@ -31,30 +31,24 @@ class Dokumen extends Model
         'keterangan_revisi',
         'keterangan_pengirim',
         'tanggal_revisi',
-        'id_ormawa',
-        'id_dosen',
-        'id_kemahasiswaan'
+        'id_admin',
+        'id_kuwu',
     ];
 
     protected $casts = [
         'tanggal_verifikasi' => 'datetime',
     ];
 
-    // Relationship with Ormawa
-    public function ormawa()
+    // Relationship with  Admin
+    public function admin()
     {
-        return $this->belongsTo(Ormawas::class, 'id_ormawa');
+        return $this->belongsTo(Admin::class, 'id_admin');
     }
 
-    // Relationship with Dosen
-    public function dosen()
+    // Relationship with Kuwu
+    public function kuwu()
     {
-        return $this->belongsTo(Dosen::class, 'id_dosen');
+        return $this->belongsTo(Kuwu::class, 'id_kuwu');
     }
 
-    // Relationship with Kemahasiswaan
-    public function kemahasiswaan()
-    {
-        return $this->belongsTo(Kemahasiswaan::class, 'id_kemahasiswaan');
-    }
 }

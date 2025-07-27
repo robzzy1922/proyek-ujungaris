@@ -30,8 +30,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             AdminSeeder::class,
-            DosenSeeder::class,
-            OrmawaSeeder::class,
+            KuwuSeeder::class,
         ]);
     }
 }
