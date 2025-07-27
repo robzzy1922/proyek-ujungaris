@@ -1,4 +1,5 @@
 @extends('layouts.app_admin')
+
 @section('title', 'Dashboard Ormawa')
 @section('content')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -431,6 +432,32 @@
                     confirmButtonColor: '#dc2626'
                 });
             });
+    }
+
+    function editQrCode() {
+        if (!currentDocumentId) return;
+
+        // Generate QR Code first
+        fetch(`/ormawa/dokumen/${currentDocumentId}/generate-qr`, {
+            method: 'GET',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Redirect to QR editor page
+                window.location.href = `/ormawa/dokumen/${currentDocumentId}/edit-qr`;
+            } else {
+                alert(data.message || 'Gagal membuat QR Code');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error generating QR Code');
+        });
     }
 </script>
 @endsection

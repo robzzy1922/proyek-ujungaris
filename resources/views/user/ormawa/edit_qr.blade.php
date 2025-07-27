@@ -1,4 +1,7 @@
 @extends('layouts.app_admin')
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+@endpush
 @section('title', 'Edit QR Code Position')
 @section('content')
 
@@ -170,6 +173,184 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/interact.js/1.10.11/interact.min.js"></script>
 <script>
-    // ... script dari dashboard_dosen.blade.php ...
+    let pdfDoc = null;
+    let pageNum = 1;
+    let pageRendering = false;
+    let pageNumPending = null;
+
+    // Konfigurasi PDF.js
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js';
+
+    // Inisialisasi interaksi QR Code
+    function initializeInteract() {
+        interact('#qrCode')
+            .draggable({
+                enabled: true,
+                inertia: true,
+                modifiers: [
+                    interact.modifiers.restrictRect({
+                        restriction: 'parent',
+                        endOnly: true
+                    })
+                ],
+                autoScroll: true,
+                listeners: {
+                    move: dragMoveListener
+                },
+                handle: '#moveHandle'
+            })
+            .resizable({
+                edges: { right: true, bottom: true },
+                restrictEdges: {
+                    outer: 'parent',
+                    endOnly: true,
+                },
+                restrictSize: {
+                    min: { width: 30, height: 30 },
+                    max: { width: 150, height: 150 },
+                },
+                inertia: true,
+                listeners: {
+                    move: resizeMoveListener
+                }
+            });
+    }
+
+    function dragMoveListener(event) {
+        const target = event.target;
+        const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
+        const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
+
+        target.style.transform = `translate(${x}px, ${y}px)`;
+        target.setAttribute('data-x', x);
+        target.setAttribute('data-y', y);
+    }
+
+    function resizeMoveListener(event) {
+        const target = event.target;
+        let x = (parseFloat(target.getAttribute('data-x')) || 0);
+        let y = (parseFloat(target.getAttribute('data-y')) || 0);
+
+        target.style.width = `${event.rect.width}px`;
+        target.style.height = `${event.rect.height}px`;
+
+        x += event.deltaRect.left;
+        y += event.deltaRect.top;
+
+        target.style.transform = `translate(${x}px, ${y}px)`;
+        target.setAttribute('data-x', x);
+        target.setAttribute('data-y', y);
+    }
+
+    function calculateRelativePosition(element, container) {
+        const elementRect = element.getBoundingClientRect();
+        const containerRect = container.getBoundingClientRect();
+
+        return {
+            x: ((elementRect.left - containerRect.left) / containerRect.width) * 100,
+            y: ((elementRect.top - containerRect.top) / containerRect.height) * 100,
+            width: (elementRect.width / containerRect.width) * 100,
+            height: (elementRect.height / containerRect.height) * 100,
+            page: pageNum
+        };
+    }
+
+    function saveQrPosition(dokumenId) {
+        const qrElement = document.getElementById('qrCode');
+        const container = document.getElementById('pdfViewer');
+        const position = calculateRelativePosition(qrElement, container);
+
+        fetch(`/ormawa/dokumen/${dokumenId}/save-qr-position`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify(position)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire({
+                    title: 'Berhasil!',
+                    text: 'QR Code berhasil ditempatkan dan dokumen telah disahkan',
+                    icon: 'success',
+                    confirmButtonText: 'OK'
+                }).then(() => {
+                    window.location.href = '{{ route("ormawa.dashboard") }}';
+                });
+            } else {
+                Swal.fire({
+                    title: 'Gagal!',
+                    text: data.message || 'Gagal menyimpan posisi QR code',
+                    icon: 'error'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire({
+                title: 'Error!',
+                text: 'Gagal menyimpan posisi QR code',
+                icon: 'error'
+            });
+        });
+    }
+
+    // Render PDF page
+    async function renderPage(num) {
+        pageRendering = true;
+
+        try {
+            const page = await pdfDoc.getPage(num);
+            const canvas = document.getElementById('pdfViewer');
+            const context = canvas.getContext('2d');
+
+            const containerWidth = canvas.parentElement.clientWidth;
+            const viewport = page.getViewport({ scale: 1 });
+            const scale = Math.min(
+                (containerWidth - 20) / viewport.width,
+                (window.innerHeight - 200) / viewport.height
+            ) * 1.2;
+
+            const scaledViewport = page.getViewport({ scale });
+
+            canvas.width = scaledViewport.width;
+            canvas.height = scaledViewport.height;
+
+            const renderContext = {
+                canvasContext: context,
+                viewport: scaledViewport
+            };
+
+            await page.render(renderContext).promise;
+            pageRendering = false;
+
+            if (pageNumPending !== null) {
+                renderPage(pageNumPending);
+                pageNumPending = null;
+            }
+        } catch (error) {
+            console.error('Error rendering page:', error);
+            pageRendering = false;
+        }
+    }
+
+    // Initialize PDF
+    async function initPDF() {
+        try {
+            const url = "{{ asset('storage/' . $dokumen->file) }}";
+            pdfDoc = await pdfjsLib.getDocument(url).promise;
+            renderPage(pageNum);
+        } catch (error) {
+            console.error('Error loading PDF:', error);
+        }
+    }
+
+    // Initialize when document is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        initPDF();
+        initializeInteract();
+    });
 </script>
 @endsection

@@ -16,20 +16,6 @@
                 Dashboard
             </a>
 
-            <!-- Kelola Pengguna -->
-            <p class="text-sm text-gray-500 mt-4 ml-2">Kelola Pengguna</p>
-            <a href="#" class="flex items-center px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2h5M12 11a4 4 0 100-8 4 4 0 000 8z"/>
-                </svg>
-                Data Pengguna
-            </a>
-            <a href="#" class="flex items-center px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/>
-                </svg>
-                Tambah Pengguna
-            </a>
             <!-- Kelola Dokumen -->
             <p class="text-sm text-gray-500 mt-4 ml-2">Kelola Dokumen</p>
             <a href="{{ route('ormawa.pengajuan') }}" class="flex items-center px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">
