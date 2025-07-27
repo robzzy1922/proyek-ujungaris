@@ -220,25 +220,33 @@
 
             <div class="flex flex-col justify-end px-6 py-4 space-y-2 border-t border-gray-200 md:flex-row md:space-y-0 md:space-x-3"
                 id="modalButtons">
+                <!-- Download button - visible only when status is 'disahkan' -->
                 <button onclick="downloadDocument()"
-                    class="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                    class="hidden px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                     Download
                 </button>
+
+                <!-- View button - always visible -->
                 <button onclick="viewDocument()"
                     class="px-4 py-2 text-white bg-yellow-500 rounded-md hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2">
                     Lihat
                 </button>
+
+                <!-- Approve button - visible only when status is 'diajukan' -->
                 <button onclick="approveDokumen()"
-                    class="px-4 py-2 text-white bg-green-500 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                    class="hidden px-4 py-2 text-white bg-green-500 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
                     Setujui
                 </button>
+
+                <!-- Close button - always visible -->
                 <button onclick="closeModal()"
                     class="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
                     Tutup
                 </button>
+
+                <!-- QR Code button - visible only when status is 'disetujui' -->
                 <button onclick="editQrCode()"
-                    class="px-4 py-2 text-white bg-green-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled>
+                    class="hidden px-4 py-2 text-white bg-green-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed">
                     Bubuhkan QR Code
                 </button>
             </div>
@@ -301,25 +309,40 @@
                     </div>
                 `;
 
-                // Get the QR Code button
-                const qrCodeButton = document.querySelector('button[onclick="editQrCode()"]');
+                // Get all action buttons
+                const downloadButton = document.querySelector('button[onclick="downloadDocument()"]');
                 const approveButton = document.querySelector('button[onclick="approveDokumen()"]');
+                const qrCodeButton = document.querySelector('button[onclick="editQrCode()"]');
+                const viewButton = document.querySelector('button[onclick="viewDocument()"]');
 
-                // Enable/disable buttons based on document status
-                if (data.status_dokumen.toLowerCase() === 'disetujui') {
-                    qrCodeButton.removeAttribute('disabled');
-                    qrCodeButton.classList.remove('opacity-50', 'cursor-not-allowed');
-                    qrCodeButton.classList.add('hover:bg-green-700');
+                // First, hide all action buttons except view and close
+                downloadButton.classList.add('hidden');
+                approveButton.classList.add('hidden');
+                qrCodeButton.classList.add('hidden');
 
-                    // Hide approve button if already approved
-                    approveButton.style.display = 'none';
-                } else {
-                    qrCodeButton.setAttribute('disabled', 'disabled');
-                    qrCodeButton.classList.add('opacity-50', 'cursor-not-allowed');
-                    qrCodeButton.classList.remove('hover:bg-green-700');
+                // View button is always visible
+                viewButton.classList.remove('hidden');
 
-                    // Show approve button if not approved
-                    approveButton.style.display = 'block';
+                // Show specific buttons based on status
+                switch(data.status_dokumen.toLowerCase()) {
+                    case 'diajukan':
+                        approveButton.classList.remove('hidden');
+                        break;
+
+                    case 'disetujui':
+                        qrCodeButton.classList.remove('hidden');
+                        qrCodeButton.removeAttribute('disabled');
+                        qrCodeButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                        qrCodeButton.classList.add('hover:bg-green-700');
+                        break;
+
+                    case 'disahkan':
+                        downloadButton.classList.remove('hidden');
+                        break;
+
+                    default:
+                        // For any other status, just show view button
+                        break;
                 }
 
                 document.getElementById('documentModal').classList.remove('hidden');
