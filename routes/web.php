@@ -78,7 +78,7 @@ Route::middleware(['auth:kuwu'])->prefix('kuwu')->name('kuwu.')->group(function 
     Route::get('/riwayat', [KuwuController::class, 'riwayat'])->name('riwayat');
 
     Route::get('/dokumen/{id}', [KuwuController::class, 'showDokumen'])->name('dokumen.show');
-    Route::get('/dokumen/{id}/content', [KuwuController::class, 'getDokumenContent'])->name('dokumen.content');
+    Route::get('/dokumen/{id}/view', [KuwuController::class, 'viewDokumen'])->name('dokumen.view');
     Route::get('/profile', [KuwuController::class, 'profile'])->name('profile');
     Route::get('/profile/edit', [KuwuController::class, 'editProfile'])->name('profile.edit');
     Route::put('/profile/update', [KuwuController::class, 'updateProfile'])->name('profile.update');

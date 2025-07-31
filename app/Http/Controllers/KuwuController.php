@@ -91,30 +91,46 @@ class KuwuController extends Controller
 
     public function showDokumen($id)
     {
-        $dosen_id = auth()->guard('kuwu')->user()->id;
+        try {
+            $kuwu_id = auth()->guard('kuwu')->user()->id;
 
-        $dokumen = Dokumen::with(['admin', 'kuwu'])
-            ->where('id_kuwu', $dosen_id)
-            ->where('id', $id)
-            ->firstOrFail();
+            $dokumen = Dokumen::with(['admin', 'kuwu'])
+                ->where('id_kuwu', $kuwu_id)
+                ->where('id', $id)
+                ->firstOrFail();
 
-        return response()->json([
-            'id' => $dokumen->id,
-            'nomor_surat' => $dokumen->nomor_surat,
-            'tanggal_pengajuan' => $dokumen->tanggal_pengajuan,
-            'nama_pemohon' => $dokumen->nama_pemohon,
-            'status_dokumen' => ucfirst($dokumen->status_dokumen),
-            'keterangan' => $dokumen->keterangan,
-            'keterangan_revisi' => $dokumen->keterangan_revisi,
-            'keterangan_pengirim' => $dokumen->keterangan_pengirim,
-            'file' => $dokumen->file,
-            'pengaju' => $dokumen->admin ? [
-                'nama' => $dokumen->admin->namaAdmin,
-            ] : null,
-            'kuwu' => $dokumen->kuwu ? [
-                'nama' => $dokumen->kuwu->nama_kuwu,
-            ] : null,
-        ]);
+            // Periksa keberadaan file
+            if (!Storage::disk('public')->exists($dokumen->file)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'File tidak ditemukan'
+                ], 404);
+            }
+
+            // Generate URL yang valid
+            $fileUrl = asset('storage/' . $dokumen->file);
+
+            return response()->json([
+                'success' => true,
+                'id' => $dokumen->id,
+                'nomor_surat' => $dokumen->nomor_surat,
+                'tanggal_pengajuan' => Carbon::parse($dokumen->tanggal_pengajuan)->format('d F Y'),
+                'nama_pemohon' => $dokumen->nama_pemohon,
+                'status_dokumen' => ucfirst($dokumen->status_dokumen),
+                'keterangan' => $dokumen->keterangan,
+                'file_url' => $fileUrl,
+                'pengaju' => $dokumen->admin ? [
+                    'nama' => $dokumen->admin->namaAdmin,
+                ] : null
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error in showDokumen: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function getDokumenDetail($id)

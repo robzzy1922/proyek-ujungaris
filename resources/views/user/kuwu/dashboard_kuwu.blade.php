@@ -263,32 +263,41 @@
         currentDocumentId = documentId;
         currentFileUrl = pdfUrl;
 
+        // Show loading state
+        document.getElementById('modalContent').innerHTML = `
+            <div class="flex justify-center items-center h-32">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            </div>
+        `;
+
+        document.getElementById('documentModal').classList.remove('hidden');
+
         // Fetch document details
         fetch(`/kuwu/dokumen/${documentId}`)
             .then(response => response.json())
             .then(data => {
                 document.getElementById('modalContent').innerHTML = `
                     <div class="space-y-4">
-                        <div class="p-4 mb-4 bg-gray-100 border border-blue-500 rounded-lg">
-                            <iframe src="${currentFileUrl}" width="100%" height="500px"></iframe>
-                        </div>
-                        <div>
-                            <p class="text-sm font-medium text-gray-500">Nomor Surat</p>
-                            <p class="mt-1">${data.nomor_surat}</p>
-                        </div>
-                        <div>
-                            <p class="text-sm font-medium text-gray-500">Tanggal Pengajuan</p>
-                            <p class="mt-1">${data.tanggal_pengajuan}</p>
-                        </div>
-                        <div>
-                            <p class="text-sm font-medium text-gray-500">Nama Pemohon</p>
-                            <p class="mt-1">${data.nama_pemohon}</p>
-                        </div>
-                        <div>
-                            <p class="text-sm font-medium text-gray-500">Status</p>
-                            <p class="mt-1">${data.status_dokumen}</p>
-                        </div>
 
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Nomor Surat</p>
+                                <p class="mt-1">${data.nomor_surat || '-'}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Tanggal Pengajuan</p>
+                                <p class="mt-1">${data.tanggal_pengajuan || '-'}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Nama Pemohon</p>
+                                <p class="mt-1">${data.nama_pemohon || '-'}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Status</p>
+                                <p class="mt-1">${data.status_dokumen || '-'}</p>
+                            </div>
+                        </div>
+                    </div>
                 `;
 
                 // Get all action buttons
@@ -306,28 +315,30 @@
                 viewButton.classList.remove('hidden');
 
                 // Show specific buttons based on status
-                switch(data.status_dokumen.toLowerCase()) {
-                    case 'diajukan':
-                        approveButton.classList.remove('hidden');
-                        break;
-
-                    case 'disetujui':
-                        qrCodeButton.classList.remove('hidden');
-                        qrCodeButton.removeAttribute('disabled');
-                        qrCodeButton.classList.remove('opacity-50', 'cursor-not-allowed');
-                        qrCodeButton.classList.add('hover:bg-green-700');
-                        break;
-
-                    case 'disahkan':
-                        downloadButton.classList.remove('hidden');
-                        break;
-
-                    default:
-                        // For any other status, just show view button
-                        break;
+                if (data.status_dokumen) {
+                    switch(data.status_dokumen.toLowerCase()) {
+                        case 'diajukan':
+                            approveButton.classList.remove('hidden');
+                            break;
+                        case 'disetujui':
+                            qrCodeButton.classList.remove('hidden');
+                            qrCodeButton.removeAttribute('disabled');
+                            qrCodeButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                            qrCodeButton.classList.add('hover:bg-green-700');
+                            break;
+                        case 'disahkan':
+                            downloadButton.classList.remove('hidden');
+                            break;
+                    }
                 }
-
-                document.getElementById('documentModal').classList.remove('hidden');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('modalContent').innerHTML = `
+                    <div class="p-4 text-red-500">
+                        Terjadi kesalahan saat memuat dokumen. Silakan coba lagi.
+                    </div>
+                `;
             });
     }
 

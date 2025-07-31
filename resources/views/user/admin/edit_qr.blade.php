@@ -13,8 +13,9 @@
         flex-direction: column;
         align-items: center;
         width: 100%;
-        height: 100%;
+        min-height: 600px;
         overflow: hidden;
+        position: relative;
     }
 
     #pdfViewer {
@@ -24,18 +25,24 @@
         width: auto;
         height: auto;
         max-height: calc(100vh - 200px);
+        position: relative;
     }
 
     #qrCode {
         position: absolute;
         z-index: 1000;
-        background: transparent;
-        border: 1px solid rgba(0, 0, 0, 0.1);
+        background: rgba(255, 255, 255, 0.9);
+        border: 2px dashed rgba(59, 130, 246, 0.5);
         cursor: default;
         display: flex;
         align-items: center;
         justify-content: center;
         overflow: hidden;
+        border-radius: 4px;
+    }
+
+    #qrCode:hover {
+        border-color: rgba(59, 130, 246, 0.8);
     }
 
     #qrImage {
@@ -48,7 +55,7 @@
     .move-handle {
         width: 32px;
         height: 32px;
-        background: rgba(75, 85, 99, 0.7);
+        background: rgba(59, 130, 246, 0.8);
         border: 2px solid white;
         border-radius: 50%;
         display: flex;
@@ -60,29 +67,89 @@
         left: 50%;
         transform: translate(-50%, -50%);
         color: white;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         z-index: 1001;
-        transition: background-color 0.2s;
+        transition: all 0.2s;
     }
 
     .move-handle:hover {
-        background: rgba(55, 65, 81, 1);
+        background: rgba(37, 99, 235, 1);
+        transform: translate(-50%, -50%) scale(1.1);
+    }
+
+    .page-controls {
+        margin-top: 1rem;
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        background: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .page-controls button {
+        padding: 0.5rem 1rem;
+        background: #4B5563;
+        color: white;
+        border-radius: 0.375rem;
+        border: none;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    .page-controls button:hover {
+        background: #374151;
+    }
+
+    .page-controls button:disabled {
+        background: #9CA3AF;
+        cursor: not-allowed;
     }
 
     .resize-handle {
         position: absolute;
-        right: 0;
-        bottom: 0;
-        width: 10px;
-        height: 10px;
-        background: transparent;
+        right: -5px;
+        bottom: -5px;
+        width: 12px;
+        height: 12px;
+        background: rgba(59, 130, 246, 0.8);
         cursor: se-resize;
-        border: 2px solid rgba(59, 130, 246, 0.5);
+        border: 2px solid white;
         border-radius: 50%;
+        z-index: 1002;
     }
 
     .resize-handle:hover {
-        background: rgba(59, 130, 246, 0.2);
+        background: rgba(37, 99, 235, 1);
+        transform: scale(1.2);
+    }
+
+    .loading-spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .qr-error {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        color: #666;
+        font-size: 12px;
+        text-align: center;
+        background: #f8f9fa;
+        border-radius: 4px;
     }
 </style>
 
@@ -106,8 +173,24 @@
             </ol>
         </nav>
 
+        <!-- Header Info -->
+        <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <h1 class="text-2xl font-bold text-gray-900 mb-2">Edit Posisi QR Code</h1>
+            <p class="text-gray-600">Dokumen: <span class="font-medium">{{ $dokumen->nama_dokumen ?? $dokumen->nomor_surat ?? 'Tidak diketahui' }}</span></p>
+        </div>
+
+        <!-- Debug Info (Remove in production) -->
+        @if(config('app.debug'))
+        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+            <h4 class="font-medium text-yellow-800">Debug Info:</h4>
+            <p class="text-sm text-yellow-700">QR Path: {{ $dokumen->qr_code_path ?? 'Not set' }}</p>
+            <p class="text-sm text-yellow-700">QR URL: {{ $dokumen->qr_code_path ? asset('storage/' . $dokumen->qr_code_path) : 'N/A' }}</p>
+            <p class="text-sm text-yellow-700">File exists: {{ $dokumen->qr_code_path && Storage::disk('public')->exists($dokumen->qr_code_path) ? 'Yes' : 'No' }}</p>
+        </div>
+        @endif
+
         <!-- Petunjuk Penempatan -->
-        <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4">
+        <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
             <div class="flex items-start">
                 <div class="flex-shrink-0">
                     <svg class="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -117,11 +200,12 @@
                 <div class="ml-3">
                     <h3 class="text-sm font-medium text-blue-800">Petunjuk Penempatan QR Code:</h3>
                     <div class="mt-2 text-sm text-blue-700">
-                        <ul class="list-disc list-inside">
-                            <li>Pastikan QR code ditempatkan di area yang kosong</li>
+                        <ul class="list-disc list-inside space-y-1">
+                            <li>Pastikan QR code ditempatkan di area yang kosong dan tidak menutupi teks penting</li>
                             <li>Disarankan menempatkan QR code di pojok kanan bawah dokumen</li>
-                            <li>Ukuran QR code dapat disesuaikan dengan menarik sudut kanan bawah</li>
-                            <li>Gunakan ikon di tengah QR code untuk memindahkan posisi</li>
+                            <li>Ukuran QR code dapat disesuaikan dengan menarik lingkaran biru di sudut kanan bawah</li>
+                            <li>Gunakan ikon panah di tengah QR code untuk memindahkan posisi</li>
+                            <li>Pastikan QR code tidak menutupi konten penting pada dokumen</li>
                         </ul>
                     </div>
                 </div>
@@ -129,42 +213,86 @@
         </div>
 
         <!-- Container PDF dan QR -->
-        <div id="pdfContainer" class="relative w-full">
-            <canvas id="pdfViewer" class="w-full h-full"></canvas>
-
-            <!-- QR Code Draggable -->
-            <div id="qrCode" class="absolute bg-white rounded-lg shadow-lg"
-                 style="width: 100px; height: 100px; top: 50px; left: 50px;">
-                <img id="qrImage"
-                     src="{{ asset('storage/' . $dokumen->qr_code_path) }}"
-                     alt="QR Code"
-                     class="object-contain w-full h-full"/>
-                <div id="moveHandle" class="move-handle">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                        <path d="M7.646.146a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 1.707V5.5a.5.5 0 0 1-1 0V1.707L6.354 2.854a.5.5 0 1 1-.708-.708l2-2zM8 10a.5.5 0 0 1 .5.5v3.793l1.146-1.147a.5.5 0 0 1 .708.708l-2 2a.5.5 0 0 1-.708 0l-2-2a.5.5 0 0 1 .708-.708L7.5 14.293V10.5A.5.5 0 0 1 8 10zM.146 8.354a.5.5 0 0 1 0-.708l2-2a.5.5 0 1 1 .708.708L1.707 7.5H5.5a.5.5 0 0 1 0 1H1.707l1.147 1.146a.5.5 0 0 1-.708.708l-2-2zM10 8a.5.5 0 0 1 .5-.5h3.793l-1.147-1.146a.5.5 0 0 1 .708-.708l2 2a.5.5 0 0 1 0 .708l-2 2a.5.5 0 0 1-.708-.708L14.293 8.5H10.5A.5.5 0 0 1 10 8z"/>
-                    </svg>
+        <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+            <div id="pdfContainer" class="relative w-full">
+                <!-- Loading Message -->
+                <div id="loadingMessage" class="text-center text-white py-8">
+                    <div class="loading-spinner mx-auto mb-2"></div>
+                    <span>Memuat dokumen...</span>
                 </div>
-                <div class="resize-handle"></div>
+
+                <!-- PDF Viewer -->
+                <canvas id="pdfViewer" class="w-full h-full" style="display: none;"></canvas>
+
+                <!-- Kontrol Halaman -->
+                <div class="page-controls" style="display: none;" id="pageControls">
+                    <button id="prevPage" disabled>Previous</button>
+                    <span id="pageInfo">Page: <span id="pageNum">1</span> / <span id="pageCount">1</span></span>
+                    <button id="nextPage">Next</button>
+                </div>
+
+                <!-- QR Code Draggable -->
+                <div id="qrCode" class="absolute bg-white rounded-lg shadow-lg"
+                     style="width: 100px; height: 100px; top: 50px; left: 50px; display: none;">
+                    @if($dokumen->qr_code_path && Storage::disk('public')->exists($dokumen->qr_code_path))
+                        <img id="qrImage"
+                             src="{{ asset('storage/' . $dokumen->qr_code_path) }}"
+                             alt="QR Code"
+                             class="object-contain w-full h-full"
+                             onerror="handleQrImageError(this)"/>
+                    @else
+                        <div class="qr-error">
+                            <div>
+                                <svg class="w-8 h-8 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                                </svg>
+                                QR Code<br>Not Found
+                            </div>
+                        </div>
+                    @endif
+                    <div id="moveHandle" class="move-handle">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M7.646.146a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 1.707V5.5a.5.5 0 0 1-1 0V1.707L6.354 2.854a.5.5 0 1 1-.708-.708l2-2zM8 10a.5.5 0 0 1 .5.5v3.793l1.146-1.147a.5.5 0 0 1 .708.708l-2 2a.5.5 0 0 1-.708 0l-2-2a.5.5 0 0 1 .708-.708L7.5 14.293V10.5A.5.5 0 0 1 8 10zM.146 8.354a.5.5 0 0 1 0-.708l2-2a.5.5 0 1 1 .708.708L1.707 7.5H5.5a.5.5 0 0 1 0 1H1.707l1.147 1.146a.5.5 0 0 1-.708.708l-2-2zM10 8a.5.5 0 0 1 .5-.5h3.793l-1.147-1.146a.5.5 0 0 1 .708-.708l2 2a.5.5 0 0 1 0 .708l-2 2a.5.5 0 0 1-.708-.708L14.293 8.5H10.5A.5.5 0 0 1 10 8z"/>
+                        </svg>
+                    </div>
+                    <div class="resize-handle"></div>
+                </div>
             </div>
         </div>
 
         <!-- Tombol aksi -->
-        <div class="flex justify-end mt-4 space-x-2">
-            <button onclick="saveQrPosition({{ $dokumen->id }})"
-                    class="px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600">
-                Simpan Posisi
-            </button>
+        <div class="flex justify-end space-x-3">
             <a href="{{ route('admin.dashboard') }}"
-               class="px-4 py-2 text-gray-700 bg-gray-200 rounded hover:bg-gray-300">
+               class="px-6 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors">
+                <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
                 Batal
             </a>
+            <button onclick="saveQrPosition({{ $dokumen->id }})" id="saveButton"
+                    class="px-6 py-2 text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors">
+                <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                Simpan Posisi
+            </button>
         </div>
     @else
-        <div class="text-center py-8">
-            <p class="text-red-500">Dokumen tidak ditemukan.</p>
-            <a href="{{ route('admin.dashboard') }}" class="mt-4 inline-block px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-                Kembali ke Dashboard
-            </a>
+        <div class="text-center py-12">
+            <div class="bg-red-50 border border-red-200 rounded-lg p-8 max-w-md mx-auto">
+                <svg class="w-12 h-12 text-red-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+                <h3 class="text-lg font-medium text-red-800 mb-2">Dokumen Tidak Ditemukan</h3>
+                <p class="text-red-600 mb-4">Dokumen yang Anda cari tidak dapat ditemukan atau telah dihapus.</p>
+                <a href="{{ route('admin.dashboard') }}"
+                   class="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    Kembali ke Dashboard
+                </a>
+            </div>
         </div>
     @endif
 </div>
@@ -177,9 +305,165 @@
     let pageNum = 1;
     let pageRendering = false;
     let pageNumPending = null;
+    let pdfLoaded = false;
+    let canvasScale = 1;
 
     // Konfigurasi PDF.js
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js';
+
+    async function renderPage(num) {
+        if (pageRendering) {
+            pageNumPending = num;
+            return;
+        }
+
+        pageRendering = true;
+
+        try {
+            const page = await pdfDoc.getPage(num);
+            const canvas = document.getElementById('pdfViewer');
+            const context = canvas.getContext('2d');
+
+            // Calculate scale based on container width
+            const containerWidth = canvas.parentElement.clientWidth;
+            const viewport = page.getViewport({ scale: 1 });
+
+            // Increase scale for better visibility
+            canvasScale = Math.min(
+                (containerWidth - 40) / viewport.width,
+                (window.innerHeight - 250) / viewport.height
+            ) * 1.2;
+
+            const scaledViewport = page.getViewport({ scale: canvasScale });
+
+            canvas.width = scaledViewport.width;
+            canvas.height = scaledViewport.height;
+
+            const renderContext = {
+                canvasContext: context,
+                viewport: scaledViewport
+            };
+
+            await page.render(renderContext).promise;
+
+            // Hide loading and show canvas
+            document.getElementById('loadingMessage').style.display = 'none';
+            canvas.style.display = 'block';
+            document.getElementById('pageControls').style.display = 'flex';
+
+            // Show QR code after PDF is loaded
+            const qrElement = document.getElementById('qrCode');
+            if (qrElement) {
+                qrElement.style.display = 'block';
+                // Position QR code at bottom right by default
+                const defaultX = scaledViewport.width - 120;
+                const defaultY = scaledViewport.height - 120;
+                qrElement.style.left = Math.max(20, defaultX) + 'px';
+                qrElement.style.top = Math.max(20, defaultY) + 'px';
+
+                // Reset any previous transforms
+                qrElement.setAttribute('data-x', 0);
+                qrElement.setAttribute('data-y', 0);
+                qrElement.style.transform = 'translate(0px, 0px)';
+            }
+
+            pageRendering = false;
+            pdfLoaded = true;
+
+            if (pageNumPending !== null) {
+                renderPage(pageNumPending);
+                pageNumPending = null;
+            }
+
+            // Update page controls
+            document.getElementById('pageNum').textContent = num;
+            document.getElementById('prevPage').disabled = num <= 1;
+            document.getElementById('nextPage').disabled = num >= pdfDoc.numPages;
+
+            console.log('PDF page rendered successfully');
+        } catch (error) {
+            console.error('Error rendering page:', error);
+            document.getElementById('loadingMessage').innerHTML = `
+                <div class="text-red-400">
+                    <svg class="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                    <span>Error memuat dokumen: ${error.message}</span>
+                </div>
+            `;
+            pageRendering = false;
+        }
+    }
+
+    function queueRenderPage(num) {
+        if (pageRendering) {
+            pageNumPending = num;
+        } else {
+            renderPage(num);
+        }
+    }
+
+    function onPrevPage() {
+        if (pageNum <= 1) return;
+        pageNum--;
+        queueRenderPage(pageNum);
+    }
+
+    function onNextPage() {
+        if (pageNum >= pdfDoc.numPages) return;
+        pageNum++;
+        queueRenderPage(pageNum);
+    }
+
+    // Inisialisasi PDF
+    async function initPDF() {
+        try {
+            const url = "{{ route('admin.dokumen.view', $dokumen->id) }}";
+            console.log('Loading PDF from:', url);
+
+            const loadingMessage = document.getElementById('loadingMessage');
+
+            const loadingTask = pdfjsLib.getDocument(url);
+
+            loadingTask.onProgress = function(progress) {
+                if (progress.total) {
+                    const percent = Math.round((progress.loaded / progress.total) * 100);
+                    loadingMessage.innerHTML = `
+                        <div class="loading-spinner mx-auto mb-2"></div>
+                        <span>Memuat dokumen... ${percent}%</span>
+                    `;
+                }
+            };
+
+            pdfDoc = await loadingTask.promise;
+            console.log('PDF loaded successfully, pages:', pdfDoc.numPages);
+
+            document.getElementById('pageCount').textContent = pdfDoc.numPages;
+
+            // Render halaman pertama
+            await renderPage(pageNum);
+
+            // Setup event listeners
+            document.getElementById('prevPage').addEventListener('click', onPrevPage);
+            document.getElementById('nextPage').addEventListener('click', onNextPage);
+        } catch (error) {
+            console.error('Error loading PDF:', error);
+            document.getElementById('loadingMessage').innerHTML = `
+                <div class="text-red-400">
+                    <svg class="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                    <span>Gagal memuat dokumen PDF. Pastikan file PDF valid dan dapat diakses.</span>
+                </div>
+            `;
+
+            // Still show QR code if PDF fails to load
+            const qrElement = document.getElementById('qrCode');
+            if (qrElement) {
+                qrElement.style.display = 'block';
+            }
+        }
+    }
 
     // Inisialisasi interaksi QR Code
     function initializeInteract() {
@@ -206,14 +490,16 @@
                     endOnly: true,
                 },
                 restrictSize: {
-                    min: { width: 30, height: 30 },
-                    max: { width: 150, height: 150 },
+                    min: { width: 40, height: 40 },
+                    max: { width: 200, height: 200 },
                 },
                 inertia: true,
                 listeners: {
                     move: resizeMoveListener
                 }
             });
+
+        console.log('Interact.js initialized successfully');
     }
 
     function dragMoveListener(event) {
@@ -242,15 +528,47 @@
         target.setAttribute('data-y', y);
     }
 
+    // Fungsi untuk menghitung posisi relatif
     function calculateRelativePosition(element, container) {
         const elementRect = element.getBoundingClientRect();
         const containerRect = container.getBoundingClientRect();
 
+        // Get transform values
+        const transform = element.style.transform;
+        let translateX = 0, translateY = 0;
+
+        if (transform && transform.includes('translate')) {
+            const matches = transform.match(/translate\(([^,]+),\s*([^)]+)\)/);
+            if (matches) {
+                translateX = parseFloat(matches[1]) || 0;
+                translateY = parseFloat(matches[2]) || 0;
+            }
+        }
+
+        // Calculate actual position including transforms
+        const actualLeft = elementRect.left - containerRect.left;
+        const actualTop = elementRect.top - containerRect.top;
+
+        // Convert to percentage
+        const x = (actualLeft / containerRect.width) * 100;
+        const y = (actualTop / containerRect.height) * 100;
+        const width = (elementRect.width / containerRect.width) * 100;
+        const height = (elementRect.height / containerRect.height) * 100;
+
+        console.log('Position calculation:', {
+            elementRect,
+            containerRect,
+            actualLeft,
+            actualTop,
+            x, y, width, height,
+            page: pageNum
+        });
+
         return {
-            x: ((elementRect.left - containerRect.left) / containerRect.width) * 100,
-            y: ((elementRect.top - containerRect.top) / containerRect.height) * 100,
-            width: (elementRect.width / containerRect.width) * 100,
-            height: (elementRect.height / containerRect.height) * 100,
+            x: Math.max(0, Math.min(95, x)),
+            y: Math.max(0, Math.min(95, y)),
+            width: Math.max(1, Math.min(50, width)),
+            height: Math.max(1, Math.min(50, height)),
             page: pageNum
         };
     }
@@ -258,99 +576,158 @@
     function saveQrPosition(dokumenId) {
         const qrElement = document.getElementById('qrCode');
         const container = document.getElementById('pdfViewer');
+
+        if (!qrElement || !container) {
+            Swal.fire({
+                title: 'Error!',
+                text: 'Elemen QR code atau PDF viewer tidak ditemukan',
+                icon: 'error'
+            });
+            return;
+        }
+
+        // Check if QR image loaded properly
+        const qrImage = document.getElementById('qrImage');
+        if (qrImage && qrImage.style.display === 'none') {
+            Swal.fire({
+                title: 'Error!',
+                text: 'QR Code tidak dapat dimuat. Silakan refresh halaman dan coba lagi.',
+                icon: 'error'
+            });
+            return;
+        }
+
         const position = calculateRelativePosition(qrElement, container);
+
+        // Validasi posisi
+        if (position.x < 0 || position.y < 0 || position.x > 95 || position.y > 95) {
+            Swal.fire({
+                title: 'Peringatan!',
+                text: 'QR Code harus berada di dalam area dokumen',
+                icon: 'warning'
+            });
+            return;
+        }
+
+        // Log position data for debugging
+        console.log('Saving position:', position);
+
+        // Disable button and show loading
+        const saveButton = document.getElementById('saveButton');
+        const originalContent = saveButton.innerHTML;
+        saveButton.disabled = true;
+        saveButton.innerHTML = `
+            <div class="loading-spinner inline-block mr-2"></div>
+            Menyimpan...
+        `;
+
+        // Get CSRF token
+        const csrfToken = document.querySelector('meta[name="csrf-token"]');
+        if (!csrfToken) {
+            console.error('CSRF token not found');
+            Swal.fire({
+                title: 'Error!',
+                text: 'CSRF token tidak ditemukan. Silakan refresh halaman.',
+                icon: 'error'
+            });
+            saveButton.disabled = false;
+            saveButton.innerHTML = originalContent;
+            return;
+        }
 
         fetch(`/admin/dokumen/${dokumenId}/save-qr-position`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                'X-CSRF-TOKEN': csrfToken.content,
+                'Accept': 'application/json'
             },
             body: JSON.stringify(position)
         })
-        .then(response => response.json())
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                return response.json().then(err => {
+                    throw new Error(err.message || `HTTP error! status: ${response.status}`);
+                });
+            }
+            return response.json();
+        })
         .then(data => {
+            console.log('Response data:', data);
             if (data.success) {
                 Swal.fire({
                     title: 'Berhasil!',
-                    text: 'QR Code berhasil ditempatkan dan dokumen telah disahkan',
+                    text: data.message || 'QR Code berhasil ditempatkan dan dokumen telah disahkan',
                     icon: 'success',
                     confirmButtonText: 'OK'
                 }).then(() => {
                     window.location.href = '{{ route("admin.dashboard") }}';
                 });
             } else {
-                Swal.fire({
-                    title: 'Gagal!',
-                    text: data.message || 'Gagal menyimpan posisi QR code',
-                    icon: 'error'
-                });
+                throw new Error(data.message || 'Gagal menyimpan posisi QR code');
             }
         })
         .catch(error => {
             console.error('Error:', error);
             Swal.fire({
                 title: 'Error!',
-                text: 'Gagal menyimpan posisi QR code',
+                text: error.message || 'Terjadi kesalahan saat menyimpan posisi QR code',
                 icon: 'error'
             });
+        })
+        .finally(() => {
+            // Re-enable button
+            saveButton.disabled = false;
+            saveButton.innerHTML = originalContent;
         });
     }
 
-    // Render PDF page
-    async function renderPage(num) {
-        pageRendering = true;
-
-        try {
-            const page = await pdfDoc.getPage(num);
-            const canvas = document.getElementById('pdfViewer');
-            const context = canvas.getContext('2d');
-
-            const containerWidth = canvas.parentElement.clientWidth;
-            const viewport = page.getViewport({ scale: 1 });
-            const scale = Math.min(
-                (containerWidth - 20) / viewport.width,
-                (window.innerHeight - 200) / viewport.height
-            ) * 1.2;
-
-            const scaledViewport = page.getViewport({ scale });
-
-            canvas.width = scaledViewport.width;
-            canvas.height = scaledViewport.height;
-
-            const renderContext = {
-                canvasContext: context,
-                viewport: scaledViewport
-            };
-
-            await page.render(renderContext).promise;
-            pageRendering = false;
-
-            if (pageNumPending !== null) {
-                renderPage(pageNumPending);
-                pageNumPending = null;
-            }
-        } catch (error) {
-            console.error('Error rendering page:', error);
-            pageRendering = false;
-        }
+    function handleQrImageError(img) {
+        console.error('Failed to load QR code image:', img.src);
+        img.style.display = 'none';
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'qr-error';
+        errorDiv.innerHTML = `
+            <div>
+                <svg class="w-8 h-8 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+                QR Code<br>Load Error
+            </div>
+        `;
+        img.parentElement.appendChild(errorDiv);
     }
 
-    // Initialize PDF
-    async function initPDF() {
-        try {
-            const url = "{{ asset('storage/' . $dokumen->file) }}";
-            pdfDoc = await pdfjsLib.getDocument(url).promise;
-            renderPage(pageNum);
-        } catch (error) {
-            console.error('Error loading PDF:', error);
-        }
-    }
-
-    // Initialize when document is loaded
+    // Inisialisasi saat dokumen dimuat
     document.addEventListener('DOMContentLoaded', function() {
+        console.log('Initializing PDF and Interact...');
+
+        // Check if QR code image exists and is loaded
+        const qrImage = document.getElementById('qrImage');
+        if (qrImage) {
+            qrImage.onload = function() {
+                console.log('QR image loaded successfully');
+            };
+            qrImage.onerror = function() {
+                console.error('QR image failed to load');
+                handleQrImageError(this);
+            };
+        }
+
         initPDF();
         initializeInteract();
+
+        // Handle window resize
+        let resizeTimeout;
+        window.addEventListener('resize', function() {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                if (pdfDoc && pdfLoaded) {
+                    renderPage(pageNum);
+                }
+            }, 300);
+        });
     });
 </script>
 @endsection
