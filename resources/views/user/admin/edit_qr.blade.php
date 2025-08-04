@@ -234,9 +234,9 @@
                 <!-- QR Code Draggable -->
                 <div id="qrCode" class="absolute bg-white rounded-lg shadow-lg"
                      style="width: 100px; height: 100px; top: 50px; left: 50px; display: none;">
-                    @if($dokumen->qr_code_path && Storage::disk('public')->exists($dokumen->qr_code_path))
+                    @if($dokumen->qr_code_path)
                         <img id="qrImage"
-                             src="{{ asset('storage/' . $dokumen->qr_code_path) }}"
+                             src="{{ asset('storage/' . $dokumen->qr_code_path) }}?t={{ time() }}"
                              alt="QR Code"
                              class="object-contain w-full h-full"
                              onerror="handleQrImageError(this)"/>
@@ -697,6 +697,12 @@
             </div>
         `;
         img.parentElement.appendChild(errorDiv);
+        
+        // Reload halaman setelah 2 detik jika QR code gagal dimuat
+        setTimeout(function() {
+            console.log('Reloading page due to QR code load error...');
+            window.location.reload();
+        }, 2000);
     }
 
     // Inisialisasi saat dokumen dimuat

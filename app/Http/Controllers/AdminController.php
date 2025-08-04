@@ -636,55 +636,47 @@ class AdminController extends Controller
             return back()->with('error', 'Dokumen harus berstatus disetujui untuk mengedit QR Code');
         }
 
-        // Generate QR code if it doesn't exist
-        if (!$dokumen->qr_code_path || !Storage::disk('public')->exists($dokumen->qr_code_path)) {
-            // Generate kode pengesahan if not exists
-            if (!$dokumen->kode_pengesahan) {
-                $dokumen->kode_pengesahan = Str::random(10);
-            }
-
-            // Set QR code path
-            $qrCodePath = 'qrcodes/qr_' . $dokumen->id . '_' . time() . '.png';
-            $fullPath = storage_path('app/public/' . $qrCodePath);
-
-            // Create directory if not exists
-            if (!file_exists(dirname($fullPath))) {
-                mkdir(dirname($fullPath), 0755, true);
-            }
-
-            // Generate verification URL
-            $verificationUrl = route('verify.document', [
-                'id' => $dokumen->id,
-                'kode' => $dokumen->kode_pengesahan
-            ]);
-
-            // Generate QR code
-            QrCode::format('png')
-                  ->size(200)
-                  ->margin(1)
-                  ->generate($verificationUrl, $fullPath);
-
-            // Update document
-            $dokumen->update([
-                'qr_code_path' => $qrCodePath,
-                'kode_pengesahan' => $dokumen->kode_pengesahan
-            ]);
-
-            Log::info('QR Code generated for document', [
-                'dokumen_id' => $dokumen->id,
-                'qr_path' => $qrCodePath
-            ]);
+        // Selalu generate QR code baru setiap kali halaman dibuka
+        // Generate kode pengesahan if not exists
+        if (!$dokumen->kode_pengesahan) {
+            $dokumen->kode_pengesahan = Str::random(10);
         }
 
-        // Verify QR code file exists and is accessible
-        $qrFullPath = storage_path('app/public/' . $dokumen->qr_code_path);
-        if (!file_exists($qrFullPath)) {
-            Log::error('QR Code file not found', [
-                'dokumen_id' => $dokumen->id,
-                'expected_path' => $qrFullPath
-            ]);
-            return back()->with('error', 'File QR Code tidak ditemukan');
+        // Set QR code path dengan timestamp untuk menghindari cache
+        $qrCodePath = 'qrcodes/qr_' . $dokumen->id . '_' . time() . '.png';
+        $fullPath = storage_path('app/public/' . $qrCodePath);
+
+        // Create directory if not exists
+        if (!file_exists(dirname($fullPath))) {
+            mkdir(dirname($fullPath), 0755, true);
         }
+
+        // Generate verification URL
+        $verificationUrl = route('verify.document', [
+            'id' => $dokumen->id,
+            'kode' => $dokumen->kode_pengesahan
+        ]);
+
+        // Log URL untuk debugging
+        Log::debug('Verification URL: ' . $verificationUrl);
+
+        // Generate QR code
+        QrCode::format('png')
+              ->size(200)
+              ->margin(1)
+              ->generate($verificationUrl, $fullPath);
+
+        // Update document
+        $dokumen->update([
+            'qr_code_path' => $qrCodePath,
+            'kode_pengesahan' => $dokumen->kode_pengesahan
+        ]);
+
+        Log::info('QR Code generated for document', [
+            'dokumen_id' => $dokumen->id,
+            'qr_path' => $qrCodePath,
+            'verification_url' => $verificationUrl
+        ]);
 
         return view('user.admin.edit_qr', compact('dokumen'));
 

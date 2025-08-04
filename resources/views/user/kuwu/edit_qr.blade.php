@@ -170,9 +170,10 @@
             <div id="qrCode" class="absolute bg-white rounded-lg shadow-lg"
                  style="width: 100px; height: 100px; top: 50px; left: 50px;">
                 <img id="qrImage"
-                     src="{{ asset('storage/' . $dokumen->qr_code_path) }}"
+                     src="{{ asset('storage/' . $dokumen->qr_code_path) }}?t={{ time() }}"
                      alt="QR Code"
-                     class="object-contain w-full h-full"/>
+                     class="object-contain w-full h-full"
+                     onerror="handleQrImageError(this)"/>
                 <div id="moveHandle" class="move-handle">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                         <path d="M7.646.146a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 1.707V5.5a.5.5 0 0 1-1 0V1.707L6.354 2.854a.5.5 0 1 1-.708-.708l2-2zM8 10a.5.5 0 0 1 .5.5v3.793l1.146-1.147a.5.5 0 0 1 .708.708l-2 2a.5.5 0 0 1-.708 0l-2-2a.5.5 0 0 1 .708-.708L7.5 14.293V10.5A.5.5 0 0 1 8 10zM.146 8.354a.5.5 0 0 1 0-.708l2-2a.5.5 0 1 1 .708.708L1.707 7.5H5.5a.5.5 0 0 1 0 1H1.707l1.147 1.146a.5.5 0 0 1-.708.708l-2-2zM10 8a.5.5 0 0 1 .5-.5h3.793l-1.147-1.146a.5.5 0 0 1 .708-.708l2 2a.5.5 0 0 1 0 .708l-2 2a.5.5 0 0 1-.708-.708L14.293 8.5H10.5A.5.5 0 0 1 10 8z"/>
@@ -298,10 +299,45 @@
         }
     }
 
+    // Fungsi untuk menangani error loading QR code
+    function handleQrImageError(img) {
+        console.error('Failed to load QR code image:', img.src);
+        img.style.display = 'none';
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'qr-error';
+        errorDiv.innerHTML = `
+            <div>
+                <svg class="w-8 h-8 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+                QR Code<br>Load Error
+            </div>
+        `;
+        img.parentElement.appendChild(errorDiv);
+
+        // Reload halaman setelah 2 detik jika QR code gagal dimuat
+        setTimeout(function() {
+            console.log('Reloading page due to QR code load error...');
+            window.location.reload();
+        }, 2000);
+    }
+
     // Inisialisasi saat dokumen dimuat
     document.addEventListener('DOMContentLoaded', function() {
         initPDF();
         initializeInteract();
+
+        // Check if QR code image exists and is loaded
+        const qrImage = document.getElementById('qrImage');
+        if (qrImage) {
+            qrImage.onload = function() {
+                console.log('QR image loaded successfully');
+            };
+            qrImage.onerror = function() {
+                console.error('QR image failed to load');
+                handleQrImageError(this);
+            };
+        }
     });
 
     // Kode interact.js yang sudah ada

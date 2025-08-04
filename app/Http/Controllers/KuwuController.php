@@ -413,18 +413,50 @@ class KuwuController extends Controller
         }
     }
 
-    public function verifyDocument($id)
+    public function verifyDocument($id, $kode = null)
     {
         try {
+            // Log untuk debugging detail
+            Log::info('Verifikasi dokumen dimulai:', [
+                'dokumen_id' => $id,
+                'kode_input' => $kode
+            ]);
+
             $dokumen = Dokumen::with(['kuwu', 'admin', 'kemahasiswaan'])->findOrFail($id);
 
-            if (!$dokumen->is_signed || !$dokumen->kode_pengesahan) {
+            // Log untuk debugging
+            Log::info('Dokumen ditemukan:', [
+                'dokumen_id' => $id,
+                'kode_input' => $kode,
+                'kode_dokumen' => $dokumen->kode_pengesahan,
+                'is_signed' => $dokumen->is_signed ? 'Ya' : 'Tidak',
+                'status' => $dokumen->status_dokumen,
+                'qr_code_path' => $dokumen->qr_code_path
+            ]);
+
+            // Cek apakah dokumen sudah memiliki kode pengesahan
+            if (!$dokumen->kode_pengesahan) {
+                Log::error('Dokumen tidak memiliki kode pengesahan', ['dokumen_id' => $id]);
                 return view('verify.document', [
                     'verified' => false,
-                    'message' => 'Dokumen belum disahkan'
+                    'message' => 'Dokumen belum memiliki kode pengesahan'
                 ]);
             }
 
+            // Jika kode diberikan, verifikasi kesesuaian kode
+            if ($kode && $kode !== $dokumen->kode_pengesahan) {
+                Log::error('Kode pengesahan tidak valid', [
+                    'dokumen_id' => $id,
+                    'kode_input' => $kode,
+                    'kode_dokumen' => $dokumen->kode_pengesahan
+                ]);
+                return view('verify.document', [
+                    'verified' => false,
+                    'message' => 'Kode pengesahan tidak valid'
+                ]);
+            }
+
+            Log::info('Verifikasi dokumen berhasil', ['dokumen_id' => $id]);
             return view('verify.document', [
                 'dokumen' => $dokumen,
                 'title' => 'Verifikasi Dokumen',
@@ -432,9 +464,15 @@ class KuwuController extends Controller
                 'timestamp' => now()->format('d M Y H:i:s')
             ]);
         } catch (\Exception $e) {
+            Log::error('Error verifikasi dokumen: ' . $e->getMessage(), [
+                'dokumen_id' => $id,
+                'kode' => $kode,
+                'trace' => $e->getTraceAsString()
+            ]);
+
             return view('verify.document', [
                 'verified' => false,
-                'message' => 'Dokumen tidak ditemukan'
+                'message' => 'Dokumen tidak ditemukan atau terjadi kesalahan: ' . $e->getMessage()
             ]);
         }
     }
@@ -448,35 +486,47 @@ class KuwuController extends Controller
                 abort(403, 'Unauthorized action.');
             }
 
-            // Generate QR code jika belum ada
-            if (!$dokumen->qr_code_path || !Storage::disk('public')->exists($dokumen->qr_code_path)) {
-                // Generate kode pengesahan baru
+            // Selalu generate QR code baru setiap kali halaman dibuka
+            // Generate kode pengesahan jika belum ada
+            if (!$dokumen->kode_pengesahan) {
                 $dokumen->kode_pengesahan = Str::random(10);
-
-                // Set path QR code
-                $qrCodePath = 'qrcodes/qr_' . $dokumen->id . '_' . time() . '.png';
-                $fullPath = storage_path('app/public/' . $qrCodePath);
-
-                // Buat direktori jika belum ada
-                if (!file_exists(dirname($fullPath))) {
-                    mkdir(dirname($fullPath), 0755, true);
-                }
-
-                // Generate QR code
-                QrCode::format('png')
-                      ->size(400)
-                      ->margin(1)
-                      ->generate(
-                          route('verify.document', ['id' => $dokumen->id, 'kode' => $dokumen->kode_pengesahan]),
-                          $fullPath
-                      );
-
-                // Update dokumen
-                $dokumen->update([
-                    'qr_code_path' => $qrCodePath,
-                    'kode_pengesahan' => $dokumen->kode_pengesahan
-                ]);
             }
+
+            // Set path QR code dengan timestamp untuk menghindari cache
+            $qrCodePath = 'qrcodes/qr_' . $dokumen->id . '_' . time() . '.png';
+            $fullPath = storage_path('app/public/' . $qrCodePath);
+
+            // Buat direktori jika belum ada
+            if (!file_exists(dirname($fullPath))) {
+                mkdir(dirname($fullPath), 0755, true);
+            }
+
+            // Generate verification URL
+            $verificationUrl = route('verify.document', [
+                'id' => $dokumen->id,
+                'kode' => $dokumen->kode_pengesahan
+            ]);
+
+            // Log URL untuk debugging
+            Log::debug('Verification URL: ' . $verificationUrl);
+
+            // Generate QR code
+            QrCode::format('png')
+                  ->size(400)
+                  ->margin(1)
+                  ->generate($verificationUrl, $fullPath);
+
+            // Update dokumen
+            $dokumen->update([
+                'qr_code_path' => $qrCodePath,
+                'kode_pengesahan' => $dokumen->kode_pengesahan
+            ]);
+
+            Log::info('QR Code generated for document', [
+                'dokumen_id' => $dokumen->id,
+                'qr_path' => $qrCodePath,
+                'verification_url' => $verificationUrl
+            ]);
 
             return view('user.kuwu.edit_qr', compact('dokumen'));
 
@@ -520,7 +570,7 @@ class KuwuController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Error approving document: ' . $e->getMessage());
+            Log::error('Error approving document: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
