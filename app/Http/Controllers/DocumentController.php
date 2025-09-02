@@ -110,54 +110,53 @@ class DocumentController extends Controller
         file_put_contents(storage_path('app/documents/signed_' . $dokumen->id . '.pdf'), $output);
     }
 
-    public function generateQrCode(Dokumen $dokumen)
-    {
-        try {
-            // Generate unique identifier for QR
-            $qrData = [
-                'document_id' => $dokumen->id,
-                'timestamp' => now()->timestamp,
-                'validator' => auth()->id()
-            ];
 
-            $qrString = json_encode($qrData);
 
-            // Generate QR code using Simple QR Code
-            $qrCode = \SimpleSoftwareIO\QrCode\Facades\QrCode::format('png')
-                ->size(300)
-                ->errorCorrection('H')
-                ->generate($qrString);
+public function generateQrCode(Dokumen $dokumen)
+{
+    try {
+        // Buat URL verifikasi
+        $verifyUrl = route('dokumen.verify', $dokumen->id);
 
-            // Save QR code to storage
-            $qrPath = 'qrcodes/doc_' . $dokumen->id . '_' . time() . '.png';
-            Storage::disk('public')->put($qrPath, $qrCode);
+        // Generate QR Code langsung dengan URL
+        $qrCode = \SimpleSoftwareIO\QrCode\Facades\QrCode::format('png')
+            ->size(300)
+            ->errorCorrection('H')
+            ->generate($verifyUrl);
 
-            // Create TandaQr record
-            TandaQr::create([
-                'data_qr' => $qrString,
-                'tanggal_pembuatan' => now(),
-                'id_admin' => $dokumen->id_admin,
-                'id_kuwu' => auth()->id(),
-                'id_dokumen' => $dokumen->id
-            ]);
+        // Simpan file QR di storage
+        $qrPath = 'qrcodes/doc_' . $dokumen->id . '_' . time() . '.png';
+        Storage::disk('public')->put($qrPath, $qrCode);
 
-            // Update document with QR code path
-            $dokumen->update([
-                'qr_code_path' => $qrPath
-            ]);
+        // Simpan metadata QR ke tabel tanda_qrs
+        TandaQr::create([
+            'data_qr' => $verifyUrl, // simpan URL (bukan JSON lagi)
+            'tanggal_pembuatan' => now(),
+            'id_admin' => $dokumen->id_admin,
+            'id_kuwu' => auth()->id(),
+            'id_dokumen' => $dokumen->id
+        ]);
 
-            return response()->json([
-                'success' => true,
-                'qrCodeUrl' => asset('storage/' . $qrPath)
-            ]);
+        // Update dokumen dengan path QR code
+        $dokumen->update([
+            'qr_code_path' => $qrPath
+        ]);
 
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to generate QR code: ' . $e->getMessage()
-            ], 500);
-        }
+        return response()->json([
+            'success' => true,
+            'qrCodeUrl' => asset('storage/' . $qrPath),
+            'verifyUrl' => $verifyUrl
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to generate QR code: ' . $e->getMessage()
+        ], 500);
     }
+}
+
+
 
     public function viewDocument($id)
     {
@@ -176,26 +175,32 @@ class DocumentController extends Controller
             ->header('Content-Disposition', 'inline; filename="' . basename($dokumen->file) . '"');
     }
 
-    public function verify($id)
-    {
-        $dokumen = Dokumen::find($id);
+   public function verify($id, $kode)
+{
+    $dokumen = Dokumen::where('id', $id)
+        ->where('kode_pengesahan', $kode)
+        ->first();
 
-        if (!$dokumen) {
-            return view('verify.document', ['verified' => false, 'message' => 'Dokumen tidak ditemukan.']);
-        }
-
-        // Check if the document has been signed and has a QR code path
-        if ($dokumen->signed && $dokumen->qr_code_path) {
-            return view('verify.document', [
-                'verified' => true,
-                'dokumen' => $dokumen,
-                'message' => 'Dokumen berhasil diverifikasi.'
-            ]);
-        } else {
-            return view('verify.document', [
-                'verified' => false,
-                'message' => 'Dokumen belum disahkan atau QR code tidak tersedia.'
-            ]);
-        }
+    if (!$dokumen) {
+        return view('verify.document', [
+            'verified' => false,
+            'message' => 'Dokumen tidak valid atau kode salah.'
+        ]);
     }
+
+    if ($dokumen->is_signed && $dokumen->qr_code_path) {
+        return view('verify.document', [
+            'verified' => true,
+            'dokumen' => $dokumen,
+            'message' => 'Dokumen berhasil diverifikasi.'
+        ]);
+    }
+
+    return view('verify.document', [
+        'verified' => false,
+        'message' => 'Dokumen belum disahkan atau QR code tidak tersedia.'
+    ]);
+}
+
+
 }
