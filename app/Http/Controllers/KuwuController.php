@@ -520,7 +520,7 @@ class KuwuController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Error approving document: ' . $e->getMessage());
+            Log::error('Error approving document: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,

@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -182,8 +183,8 @@
 
                                     <div class="p-3 rounded-lg info-card hover:bg-gray-50">
                                         <div class="mb-1 text-sm font-medium text-gray-500">Status</div>
-                                        <div>
-                                            <span class="inline-flex px-3 py-1 text-sm font-medium text-green-700 bg-green-100 rounded-full">
+                                        <div class="font-medium text-gray-900">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                                 {{ ucfirst($dokumen->status_dokumen) }}
                                             </span>
                                         </div>

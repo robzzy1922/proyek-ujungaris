@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\Auth\AdminLoginController;
 use App\Http\Controllers\EmailVerificationDosenController;
 use App\Http\Controllers\EmailVerificationKemahasiswaanController;
 
+Route::get('/document/verify/{id}', [DocumentController::class, 'verify'])->name('document.verify');
 
 
 //login
@@ -35,7 +36,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::get('/dokumen/{id}/download', [AdminController::class, 'downloadDokumen'])->name('dokumen.download');
     Route::get('/dokumen/{id}/view', [AdminController::class, 'viewDokumen'])->name('dokumen.view');
     Route::post('/dokumen/{id}/update', [AdminController::class, 'updateDokumen'])->name('dokumen.update');
-    Route::get('/dokumen/{id}', [AdminController::class, 'showDokumen'])->name('dokumen.show');
+
 
     // Route untuk QR Code
     Route::get('/dokumen/{id}/generate-qr', [AdminController::class, 'generateQrCode'])
@@ -113,8 +114,6 @@ Route::get('dokumen/report', [AdminDokumenController::class, 'showReportForm'])-
 Route::get('dokumen/generate-report', [AdminDokumenController::class, 'weeklyReport'])->name('admin.dokumen.generate-report');
 
 // Tambahkan route ini di luar group middleware
-Route::get('/verify/document/{id}', [KuwuController::class, 'verifyDocument'])
-    ->name('verify.document');
 
 Route::get('/verify/document/{id}/{kode?}', [KuwuController::class, 'verifyDocument'])
     ->name('verify.document');

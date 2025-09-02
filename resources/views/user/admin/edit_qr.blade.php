@@ -155,7 +155,6 @@
 
 <div class="container mx-auto px-4 py-8 max-w-6xl">
     @if(isset($dokumen))
-        <!-- Breadcrumb -->
         <nav class="flex mb-4" aria-label="Breadcrumb">
             <ol class="inline-flex items-center space-x-1 md:space-x-3">
                 <li class="inline-flex items-center">
@@ -173,13 +172,11 @@
             </ol>
         </nav>
 
-        <!-- Header Info -->
         <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
             <h1 class="text-2xl font-bold text-gray-900 mb-2">Edit Posisi QR Code</h1>
             <p class="text-gray-600">Dokumen: <span class="font-medium">{{ $dokumen->nama_dokumen ?? $dokumen->nomor_surat ?? 'Tidak diketahui' }}</span></p>
         </div>
 
-        <!-- Debug Info (Remove in production) -->
         @if(config('app.debug'))
         <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
             <h4 class="font-medium text-yellow-800">Debug Info:</h4>
@@ -189,12 +186,11 @@
         </div>
         @endif
 
-        <!-- Petunjuk Penempatan -->
         <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
             <div class="flex items-start">
                 <div class="flex-shrink-0">
                     <svg class="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 011-1h2a1 1 0 011 1v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
                     </svg>
                 </div>
                 <div class="ml-3">
@@ -212,31 +208,31 @@
             </div>
         </div>
 
-        <!-- Container PDF dan QR -->
         <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
             <div id="pdfContainer" class="relative w-full">
-                <!-- Loading Message -->
                 <div id="loadingMessage" class="text-center text-white py-8">
                     <div class="loading-spinner mx-auto mb-2"></div>
                     <span>Memuat dokumen...</span>
                 </div>
 
-                <!-- PDF Viewer -->
                 <canvas id="pdfViewer" class="w-full h-full" style="display: none;"></canvas>
 
-                <!-- Kontrol Halaman -->
                 <div class="page-controls" style="display: none;" id="pageControls">
                     <button id="prevPage" disabled>Previous</button>
                     <span id="pageInfo">Page: <span id="pageNum">1</span> / <span id="pageCount">1</span></span>
                     <button id="nextPage">Next</button>
                 </div>
 
-                <!-- QR Code Draggable -->
+                {{-- Debug info (sementara, bisa dihapus nanti) --}}
+                <p>Path di DB: {{ $dokumen->qr_code_path }}</p>
+                <p>URL penuh: {{ Storage::url($dokumen->qr_code_path) }}</p>
+                <p>File exists: {{ Storage::disk('public')->exists($dokumen->qr_code_path) ? 'Yes' : 'No' }}</p>
+
                 <div id="qrCode" class="absolute bg-white rounded-lg shadow-lg"
                      style="width: 100px; height: 100px; top: 50px; left: 50px; display: none;">
                     @if($dokumen->qr_code_path && Storage::disk('public')->exists($dokumen->qr_code_path))
                         <img id="qrImage"
-                             src="{{ asset('storage/' . $dokumen->qr_code_path) }}"
+                             src="{{ Storage::url($dokumen->qr_code_path) }}"
                              alt="QR Code"
                              class="object-contain w-full h-full"
                              onerror="handleQrImageError(this)"/>
@@ -260,7 +256,6 @@
             </div>
         </div>
 
-        <!-- Tombol aksi -->
         <div class="flex justify-end space-x-3">
             <a href="{{ route('admin.dashboard') }}"
                class="px-6 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors">
@@ -297,7 +292,6 @@
     @endif
 </div>
 
-<!-- Script PDF.js dan interaksi -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/interact.js/1.10.11/interact.min.js"></script>
 <script>
@@ -355,11 +349,37 @@
             const qrElement = document.getElementById('qrCode');
             if (qrElement) {
                 qrElement.style.display = 'block';
-                // Position QR code at bottom right by default
-                const defaultX = scaledViewport.width - 120;
-                const defaultY = scaledViewport.height - 120;
-                qrElement.style.left = Math.max(20, defaultX) + 'px';
-                qrElement.style.top = Math.max(20, defaultY) + 'px';
+
+                // Check if we have saved position data
+                const savedX = {{ $dokumen->qr_position_x ?? 'null' }};
+                const savedY = {{ $dokumen->qr_position_y ?? 'null' }};
+                const savedWidth = {{ $dokumen->qr_width ?? 'null' }};
+                const savedHeight = {{ $dokumen->qr_height ?? 'null' }};
+
+                if (savedX !== null && savedY !== null) {
+                    // Use saved position (convert from percentage to pixels)
+                    const posX = (savedX / 100) * scaledViewport.width;
+                    const posY = (savedY / 100) * scaledViewport.height;
+                    qrElement.style.left = posX + 'px';
+                    qrElement.style.top = posY + 'px';
+
+                    // Use saved size if available
+                    if (savedWidth !== null && savedHeight !== null) {
+                        const width = (savedWidth / 100) * scaledViewport.width;
+                        const height = (savedHeight / 100) * scaledViewport.height;
+                        qrElement.style.width = width + 'px';
+                        qrElement.style.height = height + 'px';
+                    }
+
+                    console.log('Using saved QR position:', { posX, posY, width: savedWidth ? width : 'default', height: savedHeight ? height : 'default' });
+                } else {
+                    // Position QR code at bottom right by default
+                    const defaultX = scaledViewport.width - 120;
+                    const defaultY = scaledViewport.height - 120;
+                    qrElement.style.left = Math.max(20, defaultX) + 'px';
+                    qrElement.style.top = Math.max(20, defaultY) + 'px';
+                    console.log('Using default QR position at bottom right');
+                }
 
                 // Reset any previous transforms
                 qrElement.setAttribute('data-x', 0);
@@ -383,14 +403,12 @@
             console.log('PDF page rendered successfully');
         } catch (error) {
             console.error('Error rendering page:', error);
-            document.getElementById('loadingMessage').innerHTML = `
-                <div class="text-red-400">
+            document.getElementById('loadingMessage').innerHTML = `<div class="text-red-400">
                     <svg class="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
                     </svg>
                     <span>Error memuat dokumen: ${error.message}</span>
-                </div>
-            `;
+                </div>`;
             pageRendering = false;
         }
     }
@@ -428,10 +446,8 @@
             loadingTask.onProgress = function(progress) {
                 if (progress.total) {
                     const percent = Math.round((progress.loaded / progress.total) * 100);
-                    loadingMessage.innerHTML = `
-                        <div class="loading-spinner mx-auto mb-2"></div>
-                        <span>Memuat dokumen... ${percent}%</span>
-                    `;
+                    loadingMessage.innerHTML = `<div class="loading-spinner mx-auto mb-2"></div>
+                        <span>Memuat dokumen... ${percent}%</span>`;
                 }
             };
 
@@ -448,19 +464,30 @@
             document.getElementById('nextPage').addEventListener('click', onNextPage);
         } catch (error) {
             console.error('Error loading PDF:', error);
-            document.getElementById('loadingMessage').innerHTML = `
-                <div class="text-red-400">
+            document.getElementById('loadingMessage').innerHTML = `<div class="text-red-400">
                     <svg class="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
                     </svg>
                     <span>Gagal memuat dokumen PDF. Pastikan file PDF valid dan dapat diakses.</span>
-                </div>
-            `;
-
+                </div>`;
             // Still show QR code if PDF fails to load
             const qrElement = document.getElementById('qrCode');
             if (qrElement) {
                 qrElement.style.display = 'block';
+                // Position QR code in the center of the container
+                const container = document.getElementById('pdfContainer');
+                if (container) {
+                    const containerWidth = container.clientWidth;
+                    const containerHeight = container.clientHeight;
+                    qrElement.style.left = ((containerWidth / 2) - 50) + 'px';
+                    qrElement.style.top = ((containerHeight / 2) - 50) + 'px';
+                }
+            }
+
+            // Enable save button even if PDF fails to load
+            const saveButton = document.getElementById('saveButton');
+            if (saveButton) {
+                saveButton.disabled = false;
             }
         }
     }
@@ -588,13 +615,11 @@
 
         // Check if QR image loaded properly
         const qrImage = document.getElementById('qrImage');
-        if (qrImage && qrImage.style.display === 'none') {
-            Swal.fire({
-                title: 'Error!',
-                text: 'QR Code tidak dapat dimuat. Silakan refresh halaman dan coba lagi.',
-                icon: 'error'
-            });
-            return;
+        const qrError = qrElement.querySelector('.qr-error');
+
+        // If QR code doesn't exist yet, we can still save position for it to be generated
+        if (!qrImage && qrError) {
+            console.log('QR code not found but proceeding with position save');
         }
 
         const position = calculateRelativePosition(qrElement, container);
@@ -616,10 +641,8 @@
         const saveButton = document.getElementById('saveButton');
         const originalContent = saveButton.innerHTML;
         saveButton.disabled = true;
-        saveButton.innerHTML = `
-            <div class="loading-spinner inline-block mr-2"></div>
-            Menyimpan...
-        `;
+        saveButton.innerHTML = `<div class="loading-spinner inline-block mr-2"></div>
+            Menyimpan...`;
 
         // Get CSRF token
         const csrfToken = document.querySelector('meta[name="csrf-token"]');
@@ -635,7 +658,7 @@
             return;
         }
 
-        fetch(`/admin/dokumen/${dokumenId}/save-qr-position`, {
+        fetch(`{{ route('admin.dokumen.saveQrPosition', ['dokumen' => '__DOKUMEN_ID__']) }}`.replace('__DOKUMEN_ID__', dokumenId), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -658,14 +681,20 @@
             if (data.success) {
                 Swal.fire({
                     title: 'Berhasil!',
-                    text: data.message || 'QR Code berhasil ditempatkan dan dokumen telah disahkan',
+                    text: data.message || 'QR Code berhasil ditempel dan dokumen sudah disahkan.',
                     icon: 'success',
-                    confirmButtonText: 'OK'
+                    confirmButtonText: 'OK',
+                    timer: 2500,
+                    timerProgressBar: true
                 }).then(() => {
-                    window.location.href = '{{ route("admin.dashboard") }}';
+                    window.location.href = "{{ route('admin.dashboard') }}";
                 });
             } else {
-                throw new Error(data.message || 'Gagal menyimpan posisi QR code');
+                Swal.fire({
+                    title: 'Gagal!',
+                    text: data.message || 'Posisi QR Code gagal disimpan.',
+                    icon: 'error'
+                });
             }
         })
         .catch(error => {
@@ -688,14 +717,12 @@
         img.style.display = 'none';
         const errorDiv = document.createElement('div');
         errorDiv.className = 'qr-error';
-        errorDiv.innerHTML = `
-            <div>
+        errorDiv.innerHTML = `<div>
                 <svg class="w-8 h-8 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
                 </svg>
                 QR Code<br>Load Error
-            </div>
-        `;
+            </div>`;
         img.parentElement.appendChild(errorDiv);
     }
 
