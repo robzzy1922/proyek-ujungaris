@@ -183,9 +183,6 @@ class AdminController extends Controller
             'passwordConfirmation' => 'nullable|same:password',
         ]);
 
-        // Check if email is being changed
-        $emailChanged = ($request->email !== $admin->email);
-
         // Update basic info
         $data = [
             'namaAdmin' => $request->namaAdmin,
@@ -829,7 +826,8 @@ class AdminController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'QR Code berhasil ditambahkan ke dokumen'
+            'message' => 'QR Code berhasil ditambahkan ke dokumen',
+            'redirect' => route('admin.dashboard')
         ]);
 
     } catch (\Illuminate\Validation\ValidationException $e) {
