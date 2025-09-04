@@ -16,6 +16,8 @@
         align-items: center;
         width: 100%;
         height: 100%;
+        position: relative; /* Tambahkan ini */
+        min-height: 600px; /* Tambahkan ini */
         overflow: hidden; /* Prevent content from overflowing */
     }
 
@@ -31,13 +33,14 @@
     #qrCode {
         position: absolute;
         z-index: 1000;
-        background: transparent;
-        border: 1px solid rgba(0, 0, 0, 0.1);
-        cursor: default;
+        background: white;
+        border: 2px dashed rgba(59, 130, 246, 0.5);
+        cursor: move; /* Ubah cursor */
         display: flex;
         align-items: center;
         justify-content: center;
         overflow: hidden;
+        touch-action: none; /* Tambahkan ini */
     }
 
     #qrImage {
@@ -100,15 +103,16 @@
     }
 
     .resize-handle {
-        position: absolute;
-        right: 0;
-        bottom: 0;
-        width: 10px;
-        height: 10px;
-        background: transparent;
+         position: absolute;
+        right: -5px;
+        bottom: -5px;
+        width: 12px;
+        height: 12px;
+        background: rgba(59, 130, 246, 0.8);
         cursor: se-resize;
-        border: 2px solid rgba(59, 130, 246, 0.5);
+        border: 2px solid white;
         border-radius: 50%;
+        z-index: 1002;
     }
 
     .resize-handle:hover {
@@ -232,12 +236,12 @@
             const viewport = page.getViewport({ scale: 1 });
 
             // Increase scale for better visibility
-            const scale = Math.min(
-                (containerWidth - 20) / viewport.width, // Reduced padding
-                (window.innerHeight - 200) / viewport.height // Reduced height limit
-            ) * 1.2; // Increase scale factor
+            canvasScale = Math.min(
+                (containerWidth - 40) / viewport.width,
+                (window.innerHeight - 250) / viewport.height
+            ) * 1.2;
 
-            const scaledViewport = page.getViewport({ scale });
+            const scaledViewport = page.getViewport({ scale: canvasScale });
 
             canvas.width = scaledViewport.width;
             canvas.height = scaledViewport.height;
@@ -248,6 +252,46 @@
             };
 
             await page.render(renderContext).promise;
+
+            // Show QR code after PDF is loaded
+            const qrElement = document.getElementById('qrCode');
+            if (qrElement) {
+                qrElement.style.display = 'block';
+
+                // Check if we have saved position data
+                const savedX = {{ $dokumen->qr_position_x ?? 'null' }};
+                const savedY = {{ $dokumen->qr_position_y ?? 'null' }};
+                const savedWidth = {{ $dokumen->qr_width ?? 'null' }};
+                const savedHeight = {{ $dokumen->qr_height ?? 'null' }};
+
+                if (savedX !== null && savedY !== null) {
+                    // Use saved position (convert from percentage to pixels)
+                    const posX = (savedX / 100) * scaledViewport.width;
+                    const posY = (savedY / 100) * scaledViewport.height;
+                    qrElement.style.left = posX + 'px';
+                    qrElement.style.top = posY + 'px';
+
+                    // Use saved size if available
+                    if (savedWidth !== null && savedHeight !== null) {
+                        const width = (savedWidth / 100) * scaledViewport.width;
+                        const height = (savedHeight / 100) * scaledViewport.height;
+                        qrElement.style.width = width + 'px';
+                        qrElement.style.height = height + 'px';
+                    }
+                } else {
+                    // Position QR code at bottom right by default
+                    const defaultX = scaledViewport.width - 120;
+                    const defaultY = scaledViewport.height - 120;
+                    qrElement.style.left = Math.max(20, defaultX) + 'px';
+                    qrElement.style.top = Math.max(20, defaultY) + 'px';
+                }
+
+                // Reset any previous transforms
+                qrElement.setAttribute('data-x', 0);
+                qrElement.setAttribute('data-y', 0);
+                qrElement.style.transform = 'translate(0px, 0px)';
+            }
+
             pageRendering = false;
 
             if (pageNumPending !== null) {
@@ -262,45 +306,6 @@
         } catch (error) {
             console.error('Error rendering page:', error);
             pageRendering = false;
-        }
-
-        // Show QR code after PDF is loaded
-        const qrElement = document.getElementById('qrCode');
-        if (qrElement) {
-            qrElement.style.display = 'block';
-
-            // Check if we have saved position data
-            const savedX = {{ $dokumen->qr_position_x ?? 'null' }};
-            const savedY = {{ $dokumen->qr_position_y ?? 'null' }};
-            const savedWidth = {{ $dokumen->qr_width ?? 'null' }};
-            const savedHeight = {{ $dokumen->qr_height ?? 'null' }};
-
-            if (savedX !== null && savedY !== null) {
-                // Use saved position (convert from percentage to pixels)
-                const posX = (savedX / 100) * canvas.width;
-                const posY = (savedY / 100) * canvas.height;
-                qrElement.style.left = posX + 'px';
-                qrElement.style.top = posY + 'px';
-
-                // Use saved size if available
-                if (savedWidth !== null && savedHeight !== null) {
-                    const width = (savedWidth / 100) * canvas.width;
-                    const height = (savedHeight / 100) * canvas.height;
-                    qrElement.style.width = width + 'px';
-                    qrElement.style.height = height + 'px';
-                }
-            } else {
-                // Position QR code at bottom right by default
-                const defaultX = canvas.width - 120;
-                const defaultY = canvas.height - 120;
-                qrElement.style.left = Math.max(20, defaultX) + 'px';
-                qrElement.style.top = Math.max(20, defaultY) + 'px';
-            }
-
-            // Reset any previous transforms
-            qrElement.setAttribute('data-x', 0);
-            qrElement.setAttribute('data-y', 0);
-            qrElement.style.transform = 'translate(0px, 0px)';
         }
     }
 
@@ -349,66 +354,73 @@
     });
 
     // Inisialisasi interaksi QR Code
-    function initializeInteract() {
-        interact('#qrCode')
-            .draggable({
-                enabled: true,
-                inertia: true,
-                modifiers: [
-                    interact.modifiers.restrictRect({
-                        restriction: 'parent',
-                        endOnly: true
-                    })
-                ],
-                autoScroll: true,
-                listeners: {
-                    move: dragMoveListener
-                },
-                handle: '#moveHandle'
-            })
-            .resizable({
-                edges: { right: true, bottom: true },
-                restrictEdges: {
-                    outer: 'parent',
-                    endOnly: true,
-                },
-                restrictSize: {
-                    min: { width: 30, height: 40 },
-                    max: { width: 200, height: 200 },
-                },
-                inertia: true,
-                listeners: {
-                    move: resizeMoveListener
-                }
-            });
-    }
+function initializeInteract() {
+    const qrElement = document.getElementById('qrCode');
+    if (!qrElement) return;
+
+    interact(qrElement)
+        .draggable({
+            inertia: true,
+            modifiers: [
+                interact.modifiers.restrictRect({
+                    restriction: 'parent'
+                })
+            ],
+            listeners: {
+                move: dragMoveListener // ✅ pakai helper, bukan transform manual
+            }
+        })
+        .resizable({
+            edges: { left: true, right: true, bottom: true, top: true },
+            listeners: {
+                move: resizeMoveListener // ✅ pakai helper
+            },
+            modifiers: [
+                interact.modifiers.restrictEdges({
+                    outer: 'parent'
+                }),
+                interact.modifiers.restrictSize({
+                    min: { width: 40, height: 40 },
+                    max: { width: 200, height: 200 }
+                })
+            ],
+            inertia: true
+        });
+}
+
 
     // Fungsi-fungsi lain tetap sama
-    function dragMoveListener(event) {
-        const target = event.target;
-        const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
-        const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
+function dragMoveListener(event) {
+    const target = event.target;
 
-        target.style.transform = `translate(${x}px, ${y}px)`;
-        target.setAttribute('data-x', x);
-        target.setAttribute('data-y', y);
-    }
+    // Hitung posisi baru berdasarkan top & left
+    const currentLeft = parseFloat(target.style.left) || 0;
+    const currentTop = parseFloat(target.style.top) || 0;
 
-    function resizeMoveListener(event) {
-        const target = event.target;
-        let x = (parseFloat(target.getAttribute('data-x')) || 0);
-        let y = (parseFloat(target.getAttribute('data-y')) || 0);
+    const x = currentLeft + event.dx;
+    const y = currentTop + event.dy;
 
-        target.style.width = `${event.rect.width}px`;
-        target.style.height = `${event.rect.height}px`;
+    target.style.left = `${x}px`;
+    target.style.top = `${y}px`;
+}
 
-        x += event.deltaRect.left;
-        y += event.deltaRect.top;
+function resizeMoveListener(event) {
+    const target = event.target;
 
-        target.style.transform = `translate(${x}px, ${y}px)`;
-        target.setAttribute('data-x', x);
-        target.setAttribute('data-y', y);
-    }
+    const currentLeft = parseFloat(target.style.left) || 0;
+    const currentTop = parseFloat(target.style.top) || 0;
+
+    target.style.width = `${event.rect.width}px`;
+    target.style.height = `${event.rect.height}px`;
+
+    // Update posisi kalau ada geser saat resize
+    const newLeft = currentLeft + event.deltaRect.left;
+    const newTop = currentTop + event.deltaRect.top;
+
+    target.style.left = `${newLeft}px`;
+    target.style.top = `${newTop}px`;
+}
+
 
     // Fungsi untuk menghitung posisi relatif
     function calculateRelativePosition(element, container) {

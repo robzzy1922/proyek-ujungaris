@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\DB;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Validator;
 
 class AdminController extends Controller
 {
@@ -844,6 +846,209 @@ class AdminController extends Controller
         return response()->json([
             'success' => false,
             'message' => 'Gagal menyimpan posisi QR code: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Display list of users (admin and kuwu)
+ */
+public function kelolaUser()
+{
+    $admins = Admin::all();
+    $kuwus = Kuwu::all();
+    return view('user.admin.kelola-user.kelola-user', compact('admins', 'kuwus'));
+}
+
+/**
+ * Store a new user (admin or kuwu)
+ */
+
+public function createAdmin()
+{
+    return view('user.admin.kelola-user.create-admin');
+}
+public function storeUser(Request $request)
+{
+    $validator = Validator::make($request->all(), [
+        'role' => ['required', Rule::in(['admin', 'kuwu'])],
+        'email' => ['required', 'string', 'email', 'max:255'],
+        'password' => ['required', 'string', 'min:8'],
+        'nip' => ['required', 'string'],
+        'no_hp' => ['required', 'string'],
+        'profile' => ['nullable', 'image', 'max:2048'],
+    ]);
+
+    if ($validator->fails()) {
+        return redirect()
+            ->back()
+            ->withErrors($validator)
+            ->withInput();
+    }
+
+    // Handle profile image upload
+    $profilePath = null;
+    if ($request->hasFile('profile')) {
+        $profilePath = $request->file('profile')->store('profiles', 'public');
+    }
+
+    try {
+        DB::beginTransaction();
+
+        if ($request->role === 'admin') {
+            $request->validate([
+                'namaAdmin' => ['required', 'string', 'max:255'],
+                'email' => ['unique:admin,email'],
+            ]);
+
+            Admin::create([
+                'namaAdmin' => $request->namaAdmin,
+                'nip' => $request->nip,
+                'email' => $request->email,
+                'noHp' => $request->no_hp,
+                'password' => Hash::make($request->password),
+                'profile' => $profilePath,
+            ]);
+        } else {
+            $request->validate([
+                'nama_kuwu' => ['required', 'string', 'max:255'],
+                'email' => ['unique:kuwu,email'],
+            ]);
+
+            Kuwu::create([
+                'nama_kuwu' => $request->nama_kuwu,
+                'nip' => $request->nip,
+                'email' => $request->email,
+                'no_hp' => $request->no_hp,
+                'password' => Hash::make($request->password),
+                'profile' => $profilePath,
+            ]);
+        }
+
+        DB::commit();
+        return redirect()->route('admin.kelola-user')->with('success', 'User berhasil ditambahkan');
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        if ($profilePath) {
+            Storage::disk('public')->delete($profilePath);
+        }
+        return redirect()->back()->with('error', 'Gagal menambahkan user: ' . $e->getMessage());
+    }
+}
+
+/**
+ * Edit user form
+ */
+public function editUser(Request $request, $id)
+{
+    $user = $request->type === 'admin'
+        ? Admin::findOrFail($id)
+        : Kuwu::findOrFail($id);
+
+    return view('user.admin.kelola-user.edit-user', [
+        'user' => $user,
+        'type' => $request->type
+    ]);
+}
+
+/**
+ * Update user data
+ */
+public function updateUser(Request $request, $id)
+{
+    $isAdmin = $request->type === 'admin';
+    $user = $isAdmin ? Admin::findOrFail($id) : Kuwu::findOrFail($id);
+
+    $validator = Validator::make($request->all(), [
+        'email' => ['required', 'email', Rule::unique($isAdmin ? 'admin' : 'kuwu')->ignore($id)],
+        'nip' => ['required', 'string'],
+        'no_hp' => ['required', 'string'],
+        'password' => ['nullable', 'string', 'min:8'],
+        'profile' => ['nullable', 'image', 'max:2048'],
+    ]);
+
+    if ($isAdmin) {
+        $request->validate([
+            'namaAdmin' => ['required', 'string', 'max:255'],
+        ]);
+    } else {
+        $request->validate([
+            'nama_kuwu' => ['required', 'string', 'max:255'],
+        ]);
+    }
+
+    try {
+        DB::beginTransaction();
+
+        // Handle profile image upload
+        if ($request->hasFile('profile')) {
+            if ($user->profile) {
+                Storage::disk('public')->delete($user->profile);
+            }
+            $profilePath = $request->file('profile')->store('profiles', 'public');
+            $user->profile = $profilePath;
+        }
+
+        // Update user data
+        if ($isAdmin) {
+            $user->namaAdmin = $request->namaAdmin;
+            $user->nip = $request->nip;
+            $user->email = $request->email;
+            $user->noHp = $request->no_hp;
+        } else {
+            $user->nama_kuwu = $request->nama_kuwu;
+            $user->nip = $request->nip;
+            $user->email = $request->email;
+            $user->no_hp = $request->no_hp;
+
+        }
+
+        if ($request->filled('password')) {
+            $user->password = Hash::make($request->password);
+        }
+
+        $user->save();
+        DB::commit();
+
+        return redirect()->route('admin.kelola-user')->with('success', 'Data user berhasil diperbarui');
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return redirect()->back()->with('error', 'Gagal memperbarui data user: ' . $e->getMessage());
+    }
+}
+
+/**
+ * Delete user
+ */
+public function destroyUser(Request $request, $id)
+{
+    if ($request->type === 'kuwu') {
+        return response()->json([
+            'success' => false,
+            'message' => 'Tidak dapat menghapus user kuwu'
+        ], 403);
+    }
+
+    try {
+        $admin = Admin::findOrFail($id);
+
+        // Delete profile image if exists
+        if ($admin->profile) {
+            Storage::disk('public')->delete($admin->profile);
+        }
+
+        $admin->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User berhasil dihapus'
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal menghapus user: ' . $e->getMessage()
         ], 500);
     }
 }

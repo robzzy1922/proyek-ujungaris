@@ -22,7 +22,6 @@ class Kuwu extends Authenticatable
         'email',
         'password',
         'no_hp',
-        'prodi',
         'profile',
         'is_email_verified',
         'email_verification_code',

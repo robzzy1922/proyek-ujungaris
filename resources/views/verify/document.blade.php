@@ -52,29 +52,25 @@
                 <!-- Informasi Dokumen -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                     <div class="p-4 rounded-lg bg-gray-50">
-                        <p class="text-sm text-gray-500">Judul Dokumen</p>
-                        <p class="font-semibold text-gray-800">{{ $dokumen->judul ?? '-' }}</p>
+                        <p class="text-sm text-gray-500">Nomor Surat</p>
+                        <p class="font-semibold text-gray-800">{{ $dokumen->nomor_surat ?? '-' }}</p>
                     </div>
 
                     <div class="p-4 rounded-lg bg-gray-50">
-                        <p class="text-sm text-gray-500">Tanggal Pembuatan</p>
+                        <p class="text-sm text-gray-500">Tanggal Pengajuan</p>
                         <p class="font-semibold text-gray-800">{{ $dokumen->created_at->format('d M Y') }}</p>
                     </div>
 
                     <div class="p-4 rounded-lg bg-gray-50">
                         <p class="text-sm text-gray-500">Disahkan Oleh</p>
-                        <p class="font-semibold text-gray-800">{{ $dokumen->kuwu->nama ?? '-' }} <span class="text-xs text-gray-500">(Kuwu)</span></p>
+                        <p class="font-semibold text-gray-800">{{ $dokumen->kuwu->nama_kuwu ?? '-' }} <span class="text-xs text-gray-500">(Kuwu)</span></p>
                     </div>
 
                     <div class="p-4 rounded-lg bg-gray-50">
                         <p class="text-sm text-gray-500">Dikelola Oleh</p>
-                        <p class="font-semibold text-gray-800">{{ $dokumen->admin->nama ?? '-' }} <span class="text-xs text-gray-500">(Admin)</span></p>
+                        <p class="font-semibold text-gray-800">{{ $dokumen->admin->namaAdmin ?? '-' }} <span class="text-xs text-gray-500">(Admin)</span></p>
                     </div>
 
-                    <div class="p-4 rounded-lg bg-gray-50">
-                        <p class="text-sm text-gray-500">Nomor Surat</p>
-                        <p class="font-semibold text-gray-800">{{ $dokumen->nomor_surat ?? '-' }}</p>
-                    </div>
 
                     <div class="p-4 rounded-lg bg-gray-50">
                         <p class="text-sm text-gray-500">Nama Pemohon</p>

@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\Auth\AdminLoginController;
 use App\Http\Controllers\EmailVerificationDosenController;
 use App\Http\Controllers\EmailVerificationKemahasiswaanController;
 
+
 //login
 Route::get('/', [LoginAuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginAuthController::class, 'login'])->name('login.submit');
@@ -54,6 +55,14 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::delete('/profile/photo', [AdminController::class, 'destroyPhoto'])->name('profile.photo.destroy');
 
     Route::post('/logout', [AdminController::class, 'logout'])->name('logout');
+
+    // Kelola User routes
+    Route::get('/kelola-user', [AdminController::class, 'kelolaUser'])->name('kelola-user');
+    Route::get('/user/create', [AdminController::class, 'createAdmin'])->name('user.create');
+    Route::post('/user/store', [AdminController::class, 'storeUser'])->name('user.store');
+    Route::get('/user/{id}/edit', [AdminController::class, 'editUser'])->name('user.edit');
+    Route::put('/user/{id}', [AdminController::class, 'updateUser'])->name('user.update');
+    Route::delete('/user/{id}', [AdminController::class, 'destroyUser'])->name('user.destroy');
 
 });
 
@@ -114,4 +123,5 @@ Route::get('dokumen/generate-report', [AdminDokumenController::class, 'weeklyRep
 
 Route::get('/verify/document/{id}/{kode}', [DocumentController::class, 'verify'])
     ->name('verify.document');
+
 Route::get('/view-document/{id}', [DocumentController::class, 'viewDocument'])->name('view.document');
