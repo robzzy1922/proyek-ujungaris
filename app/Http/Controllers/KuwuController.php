@@ -262,10 +262,17 @@ class KuwuController extends Controller
         return redirect()->route('login')->with('success', 'Berhasil logout');
     }
 
-    public function generateQrCode($id)
+     public function generateQrCode($id)
     {
         try {
             $dokumen = Dokumen::findOrFail($id);
+
+            if ($dokumen->status_dokumen !== 'disetujui') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Dokumen harus berstatus disetujui untuk membubuhkan QR Code'
+                ], 400);
+            }
 
             // Generate kode pengesahan jika belum ada
             if (!$dokumen->kode_pengesahan) {
@@ -291,15 +298,6 @@ class KuwuController extends Controller
                   ->margin(1)
                   ->generate($verificationUrl, $fullPath);
 
-            // Simpan data ke tabel tanda_qrs
-            TandaQr::create([
-                'data_qr' => $verificationUrl,
-                'tanggal_pembuatan' => now(),
-                'id_admin' => $dokumen->id_admin,
-                'id_kuwu' => auth()->guard('kuwu')->id(),
-                'id_dokumen' => $dokumen->id
-            ]);
-
             // Update dokumen dengan path QR code
             $dokumen->update([
                 'qr_code_path' => $qrCodePath
@@ -320,19 +318,32 @@ class KuwuController extends Controller
         }
     }
 
-    public function saveQrPosition(Request $request, Dokumen $dokumen)
+    public function saveQrPosition(Request $request, $id)
     {
         try {
             $validated = $request->validate([
-                'x' => 'required|numeric',
-                'y' => 'required|numeric',
-                'width' => 'required|numeric',
-                'height' => 'required|numeric',
-                'page' => 'required|numeric'
+                'x' => 'required|numeric|min:0|max:100',
+                'y' => 'required|numeric|min:0|max:100',
+                'width' => 'required|numeric|min:1|max:50',
+                'height' => 'required|numeric|min:1|max:50',
+                'page' => 'required|numeric|min:1'
             ]);
 
+            $dokumen = Dokumen::findOrFail($id);
+
+            // Check authorization
+            if ($dokumen->id_kuwu != auth()->guard('kuwu')->id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized action'
+                ], 403);
+            }
+
             if (!$dokumen->qr_code_path || !Storage::disk('public')->exists($dokumen->qr_code_path)) {
-                throw new \Exception('QR Code belum di-generate');
+                return response()->json([
+                    'success' => false,
+                    'message' => 'QR Code belum di-generate'
+                ], 400);
             }
 
             $sourcePdfPath = storage_path('app/public/' . $dokumen->file);
@@ -340,53 +351,46 @@ class KuwuController extends Controller
                 throw new \Exception('File PDF sumber tidak ditemukan');
             }
 
-            // Inisialisasi FPDI
+            // Create new PDF with embedded QR code
             $pdf = new \setasign\Fpdi\Fpdi();
             $pageCount = $pdf->setSourceFile($sourcePdfPath);
 
-            // Proses setiap halaman
             for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
                 $pdf->AddPage();
                 $tplIdx = $pdf->importPage($pageNo);
                 $pdf->useTemplate($tplIdx);
 
-                // Tambahkan QR code hanya di halaman yang dipilih
                 if ($pageNo === (int)$validated['page']) {
                     $qrCodePath = storage_path('app/public/' . $dokumen->qr_code_path);
 
-                    // Dapatkan ukuran halaman
-                    $pageWidth = $pdf->GetPageWidth();
-                    $pageHeight = $pdf->GetPageHeight();
+                    if (file_exists($qrCodePath)) {
+                        $pageWidth = $pdf->GetPageWidth();
+                        $pageHeight = $pdf->GetPageHeight();
 
-                    // Konversi persentase ke koordinat absolut
-                    $x = ($validated['x'] * $pageWidth) / 100;
-                    $y = ($validated['y'] * $pageHeight) / 100;
-                    $width = ($validated['width'] * $pageWidth) / 100;
-                    $height = ($validated['height'] * $pageHeight) / 100;
+                        // Convert percentage to actual coordinates
+                        $x = ($validated['x'] * $pageWidth) / 100;
+                        $y = ($validated['y'] * $pageHeight) / 100;
+                        $width = ($validated['width'] * $pageWidth) / 100;
+                        $height = ($validated['height'] * $pageHeight) / 100;
 
-                    // Pastikan QR code tidak keluar dari halaman
-                    $x = max(0, min($x, $pageWidth - $width));
-                    $y = max(0, min($y, $pageHeight - $height));
-
-                    // Tambahkan QR code ke PDF
-                    $pdf->Image($qrCodePath, $x, $y, $width, $height);
+                        $pdf->Image($qrCodePath, $x, $y, $width, $height);
+                    }
                 }
             }
 
-            // Simpan PDF yang sudah ditandatangani
+            // Save new PDF with embedded QR code
             $newFileName = 'signed_' . time() . '_' . basename($dokumen->file);
             $newFilePath = 'dokumen/' . $newFileName;
-
-            // Pastikan direktori exists
             $fullPath = storage_path('app/public/' . $newFilePath);
+
+            // Ensure directory exists
             if (!file_exists(dirname($fullPath))) {
                 mkdir(dirname($fullPath), 0755, true);
             }
 
-            // Simpan PDF ke storage
             $pdf->Output($fullPath, 'F');
 
-            // Update database dengan timestamp yang benar
+            // Update document record
             $dokumen->update([
                 'file' => $newFilePath,
                 'qr_position_x' => $validated['x'],
@@ -394,21 +398,21 @@ class KuwuController extends Controller
                 'qr_width' => $validated['width'],
                 'qr_height' => $validated['height'],
                 'qr_page' => $validated['page'],
-                'status_dokumen' => 'disahkan',
                 'is_signed' => true,
-                'tanggal_verifikasi' => now()
+                'tanggal_verifikasi' => now(),
+                'status_dokumen' => 'disahkan'
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'QR Code berhasil ditambahkan dan dokumen telah disahkan'
+                'message' => 'QR Code berhasil ditambahkan ke dokumen'
             ]);
 
         } catch (\Exception $e) {
             Log::error('Error in saveQrPosition: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal menyimpan QR code: ' . $e->getMessage()
+                'message' => 'Gagal menyimpan posisi QR code: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -439,52 +443,81 @@ class KuwuController extends Controller
         }
     }
 
-    public function editQrCode($id)
-    {
-        try {
-            $dokumen = Dokumen::findOrFail($id);
+     public function editQrCode($id)
+{
+    try {
+        $dokumen = Dokumen::findOrFail($id);
 
-            if ($dokumen->id_kuwu != auth()->guard('kuwu')->id()) {
-                abort(403, 'Unauthorized action.');
-            }
-
-            // Generate QR code jika belum ada
-            if (!$dokumen->qr_code_path || !Storage::disk('public')->exists($dokumen->qr_code_path)) {
-                // Generate kode pengesahan baru
-                $dokumen->kode_pengesahan = Str::random(10);
-
-                // Set path QR code
-                $qrCodePath = 'qrcodes/qr_' . $dokumen->id . '_' . time() . '.png';
-                $fullPath = storage_path('app/public/' . $qrCodePath);
-
-                // Buat direktori jika belum ada
-                if (!file_exists(dirname($fullPath))) {
-                    mkdir(dirname($fullPath), 0755, true);
-                }
-
-                // Generate QR code
-                QrCode::format('png')
-                      ->size(400)
-                      ->margin(1)
-                      ->generate(
-                          route('verify.document', ['id' => $dokumen->id, 'kode' => $dokumen->kode_pengesahan]),
-                          $fullPath
-                      );
-
-                // Update dokumen
-                $dokumen->update([
-                    'qr_code_path' => $qrCodePath,
-                    'kode_pengesahan' => $dokumen->kode_pengesahan
-                ]);
-            }
-
-            return view('user.kuwu.edit_qr', compact('dokumen'));
-
-        } catch (\Exception $e) {
-            Log::error('Error in editQrCode: ' . $e->getMessage());
-            return back()->with('error', 'Gagal memuat QR Code: ' . $e->getMessage());
+        // Check authorization
+        if ($dokumen->id_kuwu != auth()->guard('kuwu')->id()) {
+            abort(403, 'Unauthorized action.');
         }
+
+        // Check document status
+        if ($dokumen->status_dokumen !== 'disetujui') {
+            return back()->with('error', 'Dokumen harus berstatus disetujui untuk mengedit QR Code');
+        }
+
+        // Generate QR code if it doesn't exist
+        if (!$dokumen->qr_code_path || !Storage::disk('public')->exists($dokumen->qr_code_path)) {
+            // Generate kode pengesahan if not exists
+            if (!$dokumen->kode_pengesahan) {
+                $dokumen->kode_pengesahan = Str::random(10);
+            }
+
+            // Set QR code path
+            $qrCodePath = 'qrcodes/qr_' . $dokumen->id . '_' . time() . '.png';
+            $fullPath = storage_path('app/public/' . $qrCodePath);
+
+            // Create directory if not exists
+            if (!file_exists(dirname($fullPath))) {
+                mkdir(dirname($fullPath), 0755, true);
+            }
+
+            // Generate verification URL
+            $verificationUrl = route('verify.document', [
+                'id' => $dokumen->id,
+                'kode' => $dokumen->kode_pengesahan
+            ]);
+
+            // Generate QR code
+            QrCode::format('png')
+                  ->size(200)
+                  ->margin(1)
+                  ->generate($verificationUrl, $fullPath);
+
+            // Update document
+            $dokumen->update([
+                'qr_code_path' => $qrCodePath,
+                'kode_pengesahan' => $dokumen->kode_pengesahan
+            ]);
+
+            Log::info('QR Code generated for document', [
+                'dokumen_id' => $dokumen->id,
+                'qr_path' => $qrCodePath
+            ]);
+        }
+
+        // Verify QR code file exists and is accessible
+        $qrFullPath = storage_path('app/public/' . $dokumen->qr_code_path);
+        if (!file_exists($qrFullPath)) {
+            Log::error('QR Code file not found', [
+                'dokumen_id' => $dokumen->id,
+                'expected_path' => $qrFullPath
+            ]);
+            return back()->with('error', 'File QR Code tidak ditemukan');
+        }
+
+        return view('user.kuwu.edit_qr', compact('dokumen'));
+
+    } catch (\Exception $e) {
+        Log::error('Error in editQrCode: ' . $e->getMessage(), [
+            'dokumen_id' => $id,
+            'trace' => $e->getTraceAsString()
+        ]);
+        return back()->with('error', 'Gagal memuat QR Code: ' . $e->getMessage());
     }
+}
 
 
     public function approveDokumen($id)
@@ -505,14 +538,6 @@ class KuwuController extends Controller
                 'status_dokumen' => 'disetujui',
                 'tanggal_verifikasi' => now()
             ]);
-
-            // Create activity log if you have it
-            // ActivityLog::create([
-            //     'user_id' => auth()->guard('kuwu')->id(),
-            //     'action' => 'approve',
-            //     'dokumen_id' => $dokumen->id,
-            //     'description' => 'Dokumen telah disetujui'
-            // ]);
 
             return response()->json([
                 'success' => true,

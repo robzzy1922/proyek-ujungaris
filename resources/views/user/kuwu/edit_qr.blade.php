@@ -1,4 +1,8 @@
 @extends('layouts.app_kuwu')
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/interact.js/1.10.11/interact.min.js"></script>
+@endpush
 @section('title', 'Edit QR Code Position')
 @section('content')
 
@@ -168,23 +172,24 @@
 
             <!-- QR Code Draggable -->
             <div id="qrCode" class="absolute bg-white rounded-lg shadow-lg"
-                 style="width: 100px; height: 100px; top: 50px; left: 50px;">
+                 style="width: 100px; height: 100px; display: none;">
                 <img id="qrImage"
                      src="{{ asset('storage/' . $dokumen->qr_code_path) }}"
                      alt="QR Code"
-                     class="object-contain w-full h-full"/>
+                     class="object-contain w-full h-full"
+                     onerror="handleQrImageError(this)"/>
                 <div id="moveHandle" class="move-handle">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                         <path d="M7.646.146a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 1.707V5.5a.5.5 0 0 1-1 0V1.707L6.354 2.854a.5.5 0 1 1-.708-.708l2-2zM8 10a.5.5 0 0 1 .5.5v3.793l1.146-1.147a.5.5 0 0 1 .708.708l-2 2a.5.5 0 0 1-.708 0l-2-2a.5.5 0 0 1 .708-.708L7.5 14.293V10.5A.5.5 0 0 1 8 10zM.146 8.354a.5.5 0 0 1 0-.708l2-2a.5.5 0 1 1 .708.708L1.707 7.5H5.5a.5.5 0 0 1 0 1H1.707l1.147 1.146a.5.5 0 0 1-.708.708l-2-2zM10 8a.5.5 0 0 1 .5-.5h3.793l-1.147-1.146a.5.5 0 0 1 .708-.708l2 2a.5.5 0 0 1 0 .708l-2 2a.5.5 0 0 1-.708-.708L14.293 8.5H10.5A.5.5 0 0 1 10 8z"/>
                     </svg>
                 </div>
-                <div class="absolute right-0 bottom-0 w-4 h-4 bg-blue-500 rounded-full opacity-50 cursor-se-resize"></div>
+                <div class="resize-handle"></div>
             </div>
         </div>
 
         <!-- Tombol aksi -->
         <div class="flex justify-end mt-4 space-x-2">
-            <button onclick="saveQrPosition({{ $dokumen->id }})"
+            <button id="saveButton" onclick="saveQrPosition({{ $dokumen->id }})"
                     class="px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600">
                 Simpan Posisi
             </button>
@@ -258,6 +263,45 @@
             console.error('Error rendering page:', error);
             pageRendering = false;
         }
+
+        // Show QR code after PDF is loaded
+        const qrElement = document.getElementById('qrCode');
+        if (qrElement) {
+            qrElement.style.display = 'block';
+
+            // Check if we have saved position data
+            const savedX = {{ $dokumen->qr_position_x ?? 'null' }};
+            const savedY = {{ $dokumen->qr_position_y ?? 'null' }};
+            const savedWidth = {{ $dokumen->qr_width ?? 'null' }};
+            const savedHeight = {{ $dokumen->qr_height ?? 'null' }};
+
+            if (savedX !== null && savedY !== null) {
+                // Use saved position (convert from percentage to pixels)
+                const posX = (savedX / 100) * canvas.width;
+                const posY = (savedY / 100) * canvas.height;
+                qrElement.style.left = posX + 'px';
+                qrElement.style.top = posY + 'px';
+
+                // Use saved size if available
+                if (savedWidth !== null && savedHeight !== null) {
+                    const width = (savedWidth / 100) * canvas.width;
+                    const height = (savedHeight / 100) * canvas.height;
+                    qrElement.style.width = width + 'px';
+                    qrElement.style.height = height + 'px';
+                }
+            } else {
+                // Position QR code at bottom right by default
+                const defaultX = canvas.width - 120;
+                const defaultY = canvas.height - 120;
+                qrElement.style.left = Math.max(20, defaultX) + 'px';
+                qrElement.style.top = Math.max(20, defaultY) + 'px';
+            }
+
+            // Reset any previous transforms
+            qrElement.setAttribute('data-x', 0);
+            qrElement.setAttribute('data-y', 0);
+            qrElement.style.transform = 'translate(0px, 0px)';
+        }
     }
 
     function queueRenderPage(num) {
@@ -304,9 +348,8 @@
         initializeInteract();
     });
 
-    // Kode interact.js yang sudah ada
+    // Inisialisasi interaksi QR Code
     function initializeInteract() {
-        // QR code draggable
         interact('#qrCode')
             .draggable({
                 enabled: true,
@@ -330,8 +373,8 @@
                     endOnly: true,
                 },
                 restrictSize: {
-                    min: { width: 30, height: 30 },
-                    max: { width: 150, height: 150 },
+                    min: { width: 30, height: 40 },
+                    max: { width: 200, height: 200 },
                 },
                 inertia: true,
                 listeners: {
@@ -393,10 +436,21 @@
     function saveQrPosition(dokumenId) {
         const qrElement = document.getElementById('qrCode');
         const container = document.getElementById('pdfViewer');
-        const position = calculateRelativePosition(qrElement, container);
 
-        // Log position data for debugging
-        console.log('Saving position:', position);
+        if (!qrElement || !container) {
+            Swal.fire({
+                title: 'Error!',
+                text: 'Elemen QR code atau PDF viewer tidak ditemukan',
+                icon: 'error'
+            });
+            return;
+        }
+
+        const position = calculateRelativePosition(qrElement, container);
+        const saveButton = document.getElementById('saveButton');
+        const originalContent = saveButton.innerHTML;
+        saveButton.disabled = true;
+        saveButton.innerHTML = `<div class="loading-spinner inline-block mr-2"></div>Menyimpan...`;
 
         fetch(`/kuwu/dokumen/${dokumenId}/save-qr-position`, {
             method: 'POST',
@@ -409,15 +463,28 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert('Posisi QR code berhasil disimpan');
-                window.location.href = '{{ route("kuwu.dashboard") }}';
+                Swal.fire({
+                    title: 'Berhasil!',
+                    text: 'QR Code berhasil ditempel dan dokumen sudah disahkan.',
+                    icon: 'success',
+                    confirmButtonText: 'OK'
+                }).then(() => {
+                    window.location.href = '{{ route("kuwu.dashboard") }}';
+                });
             } else {
-                alert(data.message || 'Gagal menyimpan posisi QR code');
+                throw new Error(data.message || 'Gagal menyimpan posisi QR code');
             }
         })
         .catch(error => {
-            console.error('Error:', error);
-            alert('Gagal menyimpan posisi QR code');
+            Swal.fire({
+                title: 'Error!',
+                text: error.message,
+                icon: 'error'
+            });
+        })
+        .finally(() => {
+            saveButton.disabled = false;
+            saveButton.innerHTML = originalContent;
         });
     }
 </script>

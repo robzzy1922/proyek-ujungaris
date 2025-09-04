@@ -177,7 +177,7 @@ public function generateQrCode(Dokumen $dokumen)
 
    public function verify($id, $kode)
 {
-    $dokumen = Dokumen::where('id', $id)
+    $dokumen = Dokumen::with(['admin', 'kuwu'])
         ->where('kode_pengesahan', $kode)
         ->first();
 
@@ -192,7 +192,8 @@ public function generateQrCode(Dokumen $dokumen)
         return view('verify.document', [
             'verified' => true,
             'dokumen' => $dokumen,
-            'message' => 'Dokumen berhasil diverifikasi.'
+            'message' => 'Dokumen berhasil diverifikasi.',
+            'timestamp' => now()->format('d M Y H:i:s'),
         ]);
     }
 
